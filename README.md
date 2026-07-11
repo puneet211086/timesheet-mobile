@@ -1,23 +1,26 @@
-# Timesheet Mobile — Milestone 3 overlay
+# Timesheet Mobile — Milestone 4
 
-This update adds the premium dashboard without changing the SQLite schema.
+This overlay adds a premium monthly calendar using the existing SQLite data.
 
 ## Included
-- Reusable theme tokens
-- Live dashboard timer
-- Today hours and earnings cards
-- Monday–Sunday weekly summary
-- 40-hour progress bar
-- Weekly overtime pay calculation
-- Recent entries list
+
+- Monthly calendar grid
+- Previous/next month navigation
+- Today shortcut
+- Daily hours and estimated earnings directly in each calendar cell
+- Monthly hours, pay, and work-day summary
+- Tap-to-open day details bottom sheet
+- Shift details with job colors, time range, duration, notes, and estimated pay
+- Existing Reports route retained but hidden from the tab bar
 
 ## Apply
-Copy this folder's contents into the root of your existing project and replace matching files.
 
-Then restart Expo:
+1. Stop Expo with `Ctrl+C`.
+2. Copy this overlay into the project root and replace matching files.
+3. Restart:
 
 ```bash
 npx expo start --clear
 ```
 
-No new npm packages or database reset are required.
+No new dependency or SQLite migration is required.

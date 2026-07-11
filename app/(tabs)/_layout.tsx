@@ -30,20 +30,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="calendar"
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="jobs"
         options={{
           title: 'Jobs',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="briefcase-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="reports"
-        options={{
-          title: 'Reports',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bar-chart-outline" color={color} size={size} />
           ),
         }}
       />
@@ -56,6 +56,8 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="reports" options={{ href: null }} />
+      <Tabs.Screen name="two" options={{ href: null }} />
     </Tabs>
   );
 }
