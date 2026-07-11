@@ -1,26 +1,23 @@
-# Timesheet Mobile — Milestone 4
+# Timesheet Mobile — Milestone 5
 
-This overlay adds a premium monthly calendar using the existing SQLite data.
+Adds editing and deletion for completed time entries.
 
 ## Included
 
-- Monthly calendar grid
-- Previous/next month navigation
-- Today shortcut
-- Daily hours and estimated earnings directly in each calendar cell
-- Monthly hours, pay, and work-day summary
-- Tap-to-open day details bottom sheet
-- Shift details with job colors, time range, duration, notes, and estimated pay
-- Existing Reports route retained but hidden from the tab bar
+- Tap completed shifts from Timesheet or Calendar
+- Change job, work date, clock-in time, clock-out time, and notes
+- Live duration and estimated-pay preview
+- Validation for malformed dates/times and invalid ranges
+- Delete confirmation
+- Automatic refresh after returning to Timesheet or Calendar
+- No database migration or additional package required
 
 ## Apply
 
-1. Stop Expo with `Ctrl+C`.
-2. Copy this overlay into the project root and replace matching files.
-3. Restart:
+Copy this folder's contents into the existing project and replace matching files, then run:
 
 ```bash
 npx expo start --clear
 ```
 
-No new dependency or SQLite migration is required.
+Date fields use `YYYY-MM-DD`; time fields use 24-hour `HH:MM` format.

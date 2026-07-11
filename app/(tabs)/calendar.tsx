@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -81,6 +81,7 @@ function formatDuration(value: number) {
 
 export default function CalendarScreen() {
   const db = useSQLiteContext();
+  const router = useRouter();
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
@@ -319,7 +320,18 @@ export default function CalendarScreen() {
                 selectedSummary.entries.map((entry) => {
                   const hours = durationHours(entry);
                   return (
-                    <View key={entry.id} style={styles.entryCard}>
+                    <Pressable
+                      key={entry.id}
+                      style={({ pressed }) => [
+                        styles.entryCard,
+                        pressed && entry.clockOut && styles.entryCardPressed,
+                      ]}
+                      disabled={!entry.clockOut}
+                      onPress={() => {
+                        setSelectedDateKey(null);
+                        router.push(`/entries/${entry.id}`);
+                      }}
+                    >
                       <View style={[styles.jobStripe, { backgroundColor: entry.jobColor || '#2563EB' }]} />
                       <View style={styles.entryBody}>
                         <View style={styles.entryTopRow}>
@@ -331,10 +343,20 @@ export default function CalendarScreen() {
                         <Text style={styles.entryTime}>
                           {formatTime(entry.clockIn)} – {entry.clockOut ? formatTime(entry.clockOut) : 'Working now'}
                         </Text>
-                        <Text style={styles.entryDuration}>{formatDuration(hours)}</Text>
+                        <View style={styles.entryFooter}>
+                          <Text style={styles.entryDuration}>{formatDuration(hours)}</Text>
+                          {entry.clockOut ? (
+                            <View style={styles.editLink}>
+                              <Text style={styles.editLinkText}>Edit</Text>
+                              <Ionicons name="chevron-forward" size={15} color="#9CA3AF" />
+                            </View>
+                          ) : (
+                            <Text style={styles.runningText}>Working now</Text>
+                          )}
+                        </View>
                         {entry.notes ? <Text style={styles.entryNotes}>{entry.notes}</Text> : null}
                       </View>
-                    </View>
+                    </Pressable>
                   );
                 })
               ) : (
@@ -396,13 +418,18 @@ const styles = StyleSheet.create({
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
   entryList: { flexGrow: 0 },
   entryCard: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 18, overflow: 'hidden', marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  entryCardPressed: { opacity: 0.72 },
   jobStripe: { width: 6 },
   entryBody: { flex: 1, padding: 16 },
   entryTopRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   entryJob: { color: '#111827', fontSize: 16, fontWeight: '900', flex: 1 },
   entryPay: { color: '#2563EB', fontSize: 16, fontWeight: '900' },
   entryTime: { color: '#4B5563', fontSize: 14, marginTop: 8 },
-  entryDuration: { color: '#111827', fontSize: 13, fontWeight: '800', marginTop: 6 },
+  entryFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  entryDuration: { color: '#111827', fontSize: 13, fontWeight: '800' },
+  editLink: { flexDirection: 'row', alignItems: 'center' },
+  editLinkText: { color: '#9CA3AF', fontSize: 12, fontWeight: '700' },
+  runningText: { color: '#16A34A', fontSize: 12, fontWeight: '800' },
   entryNotes: { color: '#6B7280', fontSize: 13, marginTop: 8 },
   emptyState: { alignItems: 'center', paddingVertical: 42 },
   emptyIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
