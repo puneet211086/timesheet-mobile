@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useMemo, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,26 +14,26 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
-import { colors, radius, spacing } from '../../constants/theme';
-import type { Job, TimeEntry } from '../../types/models';
+} from "react-native";
+import { colors, radius, spacing } from "../../constants/theme";
+import type { Job, TimeEntry } from "../../types/models";
 import {
   combineLocalDateAndTime,
   localDateInputValue,
   localTimeInputValue,
-} from '../../utils/entry';
-import { formatHoursMinutes } from '../../utils/time';
+} from "../../utils/entry";
+import { formatHoursMinutes } from "../../utils/time";
 
-type JobRow = Omit<Job, 'isActive'> & { isActive: number };
+type JobRow = Omit<Job, "isActive"> & { isActive: number };
 
 type EditableEntry = TimeEntry & {
   createdAt: string;
   updatedAt: string;
 };
 
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
+const currency = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
 });
 
 export default function EditEntryScreen() {
@@ -45,10 +45,10 @@ export default function EditEntryScreen() {
   const [entry, setEntry] = useState<EditableEntry | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobId, setJobId] = useState<number | null>(null);
-  const [dateValue, setDateValue] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [notes, setNotes] = useState('');
+  const [dateValue, setDateValue] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function EditEntryScreen() {
   useEffect(() => {
     async function load() {
       if (!Number.isInteger(entryId)) {
-        setError('This time entry could not be found.');
+        setError("This time entry could not be found.");
         setLoading(false);
         return;
       }
@@ -72,7 +72,7 @@ export default function EditEntryScreen() {
            FROM time_entries te
            JOIN jobs j ON j.id = te.job_id
            WHERE te.id = ?`,
-          entryId
+          entryId,
         ),
         db.getAllAsync<JobRow>(
           `SELECT id, name, hourly_rate AS hourlyRate,
@@ -80,42 +80,44 @@ export default function EditEntryScreen() {
              is_active AS isActive, created_at AS createdAt,
              updated_at AS updatedAt
            FROM jobs
-           ORDER BY is_active DESC, name COLLATE NOCASE`
+           ORDER BY is_active DESC, name COLLATE NOCASE`,
         ),
       ]);
 
       if (!row) {
-        setError('This time entry could not be found.');
+        setError("This time entry could not be found.");
         setLoading(false);
         return;
       }
 
       if (!row.clockOut) {
-        setError('Clock out before editing a running entry.');
+        setError("Clock out before editing a running entry.");
         setLoading(false);
         return;
       }
 
       setEntry(row);
-      setJobs(jobRows.map((job) => ({ ...job, isActive: Boolean(job.isActive) })));
+      setJobs(
+        jobRows.map((job) => ({ ...job, isActive: Boolean(job.isActive) })),
+      );
       setJobId(row.jobId);
       setDateValue(localDateInputValue(row.clockIn));
       setStartTime(localTimeInputValue(row.clockIn));
       setEndTime(localTimeInputValue(row.clockOut));
-      setNotes(row.notes ?? '');
+      setNotes(row.notes ?? "");
       setLoading(false);
     }
 
     load().catch((loadError) => {
       console.error(loadError);
-      setError('The entry could not be loaded.');
+      setError("The entry could not be loaded.");
       setLoading(false);
     });
   }, [db, entryId]);
 
   const selectedJob = useMemo(
     () => jobs.find((job) => job.id === jobId) ?? null,
-    [jobId, jobs]
+    [jobId, jobs],
   );
 
   const preview = useMemo(() => {
@@ -130,18 +132,18 @@ export default function EditEntryScreen() {
   }, [dateValue, endTime, selectedJob, startTime]);
 
   const validate = () => {
-    if (!selectedJob) return 'Choose a job.';
+    if (!selectedJob) return "Choose a job.";
     const start = combineLocalDateAndTime(dateValue, startTime);
     const end = combineLocalDateAndTime(dateValue, endTime);
-    if (!start || !end) return 'Enter a valid date and time.';
-    if (end <= start) return 'Clock out must be after clock in.';
+    if (!start || !end) return "Enter a valid date and time.";
+    if (end <= start) return "Clock out must be after clock in.";
     return null;
   };
 
   const save = async () => {
     const validationError = validate();
     if (validationError || !jobId) {
-      setError(validationError ?? 'Choose a job.');
+      setError(validationError ?? "Choose a job.");
       return;
     }
 
@@ -160,41 +162,90 @@ export default function EditEntryScreen() {
         end.toISOString(),
         notes.trim() || null,
         new Date().toISOString(),
-        entryId
+        entryId,
       );
       router.back();
     } catch (saveError) {
       console.error(saveError);
-      setError('The entry could not be saved.');
+      setError("The entry could not be saved.");
+      setSaving(false);
+    }
+  };
+
+  // const remove = () => {
+  //   Alert.alert(
+  //     'Delete time entry?',
+  //     'This action cannot be undone.',
+  //     [
+  //       { text: 'Cancel', style: 'cancel' },
+  //       {
+  //         text: 'Delete',
+  //         style: 'destructive',
+  //         onPress: async () => {
+  //           setSaving(true);
+  //           try {
+  //             await db.runAsync('DELETE FROM time_entries WHERE id = ?', entryId);
+  //             router.back();
+  //           } catch (deleteError) {
+  //             console.error(deleteError);
+  //             setError('The entry could not be deleted.');
+  //             setSaving(false);
+  //           }
+  //         },
+  //       },
+  //     ]
+  //   );
+  // };
+
+  const deleteEntry = async () => {
+    setSaving(true);
+    setError(null);
+
+    try {
+      const result = await db.runAsync(
+        "DELETE FROM time_entries WHERE id = ?",
+        entryId,
+      );
+
+      if (result.changes === 0) {
+        throw new Error("No time entry was deleted.");
+      }
+
+      router.back();
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError("The entry could not be deleted.");
       setSaving(false);
     }
   };
 
   const remove = () => {
-    Alert.alert(
-      'Delete time entry?',
-      'This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setSaving(true);
-            try {
-              await db.runAsync('DELETE FROM time_entries WHERE id = ?', entryId);
-              router.back();
-            } catch (deleteError) {
-              console.error(deleteError);
-              setError('The entry could not be deleted.');
-              setSaving(false);
-            }
-          },
-        },
-      ]
-    );
-  };
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        "Delete this time entry? This action cannot be undone.",
+      );
 
+      if (confirmed) {
+        void deleteEntry();
+      }
+
+      return;
+    }
+
+    Alert.alert("Delete time entry?", "This action cannot be undone.", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          void deleteEntry();
+        },
+      },
+    ]);
+  };
   if (loading) {
     return (
       <SafeAreaView style={styles.centered}>
@@ -206,7 +257,11 @@ export default function EditEntryScreen() {
   if (!entry || (error && !dateValue)) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={42} color={colors.textMuted} />
+        <Ionicons
+          name="alert-circle-outline"
+          size={42}
+          color={colors.textMuted}
+        />
         <Text style={styles.loadError}>{error}</Text>
         <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
           <Text style={styles.secondaryButtonText}>Go back</Text>
@@ -219,9 +274,12 @@ export default function EditEntryScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <Pressable style={styles.iconButton} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -235,16 +293,20 @@ export default function EditEntryScreen() {
           <View style={styles.previewCard}>
             <Text style={styles.previewLabel}>Updated total</Text>
             <Text style={styles.previewDuration}>
-              {preview ? formatHoursMinutes(preview.seconds) : '—'}
+              {preview ? formatHoursMinutes(preview.seconds) : "—"}
             </Text>
             <Text style={styles.previewPay}>
-              {preview ? currency.format(preview.pay) : 'Check the time range'}
+              {preview ? currency.format(preview.pay) : "Check the time range"}
             </Text>
           </View>
 
           <View style={styles.formCard}>
             <Text style={styles.label}>Job</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.jobRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.jobRow}
+            >
               {jobs.map((job) => {
                 const selected = job.id === jobId;
                 return (
@@ -253,8 +315,15 @@ export default function EditEntryScreen() {
                     style={[styles.jobChip, selected && styles.jobChipSelected]}
                     onPress={() => setJobId(job.id)}
                   >
-                    <View style={[styles.jobDot, { backgroundColor: job.color }]} />
-                    <Text style={[styles.jobChipText, selected && styles.jobChipTextSelected]}>
+                    <View
+                      style={[styles.jobDot, { backgroundColor: job.color }]}
+                    />
+                    <Text
+                      style={[
+                        styles.jobChipText,
+                        selected && styles.jobChipTextSelected,
+                      ]}
+                    >
                       {job.name}
                     </Text>
                   </Pressable>
@@ -294,7 +363,9 @@ export default function EditEntryScreen() {
               </View>
             </View>
 
-            <Text style={styles.helper}>Use 24-hour time, for example 17:30.</Text>
+            <Text style={styles.helper}>
+              Use 24-hour time, for example 17:30.
+            </Text>
 
             <Text style={styles.label}>Notes</Text>
             <TextInput
@@ -321,7 +392,11 @@ export default function EditEntryScreen() {
             )}
           </Pressable>
 
-          <Pressable style={styles.deleteButton} onPress={remove} disabled={saving}>
+          <Pressable
+            style={styles.deleteButton}
+            onPress={remove}
+            disabled={saving}
+          >
             <Ionicons name="trash-outline" size={19} color={colors.danger} />
             <Text style={styles.deleteButtonText}>Delete entry</Text>
           </Pressable>
@@ -334,37 +409,137 @@ export default function EditEntryScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  centered: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xl,
+  },
   content: { padding: 20, paddingBottom: 44 },
-  header: { flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 20 },
-  iconButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   headerText: { marginLeft: 14 },
-  eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1.3 },
-  title: { color: colors.text, fontSize: 30, fontWeight: '900', marginTop: 2 },
-  previewCard: { backgroundColor: colors.dark, borderRadius: radius.lg, padding: spacing.xl, marginBottom: spacing.lg },
-  previewLabel: { color: colors.textSoft, fontSize: 13, fontWeight: '700' },
-  previewDuration: { color: colors.white, fontSize: 36, fontWeight: '900', marginTop: 8 },
-  previewPay: { color: '#93C5FD', fontSize: 16, fontWeight: '800', marginTop: 5 },
-  formCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  label: { color: colors.text, fontSize: 14, fontWeight: '800', marginBottom: 8, marginTop: 15 },
+  eyebrow: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.3,
+  },
+  title: { color: colors.text, fontSize: 30, fontWeight: "900", marginTop: 2 },
+  previewCard: {
+    backgroundColor: colors.dark,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  previewLabel: { color: colors.textSoft, fontSize: 13, fontWeight: "700" },
+  previewDuration: {
+    color: colors.white,
+    fontSize: 36,
+    fontWeight: "900",
+    marginTop: 8,
+  },
+  previewPay: {
+    color: "#93C5FD",
+    fontSize: 16,
+    fontWeight: "800",
+    marginTop: 5,
+  },
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  label: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 8,
+    marginTop: 15,
+  },
   jobRow: { gap: 8, paddingRight: 12 },
-  jobChip: { flexDirection: 'row', alignItems: 'center', borderRadius: 999, paddingHorizontal: 13, paddingVertical: 10, backgroundColor: colors.surfaceMuted, borderWidth: 1, borderColor: colors.border },
-  jobChipSelected: { backgroundColor: '#E8EFFF', borderColor: '#AFC5FF' },
+  jobChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 999,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  jobChipSelected: { backgroundColor: "#E8EFFF", borderColor: "#AFC5FF" },
   jobDot: { width: 9, height: 9, borderRadius: 5, marginRight: 7 },
-  jobChipText: { color: colors.textMuted, fontWeight: '700' },
+  jobChipText: { color: colors.textMuted, fontWeight: "700" },
   jobChipTextSelected: { color: colors.primary },
-  input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 13, color: colors.text, fontSize: 16 },
-  timeRow: { flexDirection: 'row', gap: 12 },
+  input: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    color: colors.text,
+    fontSize: 16,
+  },
+  timeRow: { flexDirection: "row", gap: 12 },
   timeField: { flex: 1 },
   helper: { color: colors.textSoft, fontSize: 12, marginTop: 7 },
   notesInput: { minHeight: 96 },
-  error: { color: colors.danger, fontSize: 13, fontWeight: '700', marginTop: 14 },
-  saveButton: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 17, alignItems: 'center', marginTop: spacing.lg },
-  saveButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
+  error: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 14,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 17,
+    alignItems: "center",
+    marginTop: spacing.lg,
+  },
+  saveButtonText: { color: colors.white, fontSize: 16, fontWeight: "900" },
   disabledButton: { opacity: 0.6 },
-  deleteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 17, gap: 8 },
-  deleteButtonText: { color: colors.danger, fontSize: 15, fontWeight: '800' },
-  loadError: { color: colors.textMuted, textAlign: 'center', fontSize: 16, marginTop: 12, marginBottom: 18 },
-  secondaryButton: { backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 13, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  secondaryButtonText: { color: colors.text, fontWeight: '800' },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 17,
+    gap: 8,
+  },
+  deleteButtonText: { color: colors.danger, fontSize: 15, fontWeight: "800" },
+  loadError: {
+    color: colors.textMuted,
+    textAlign: "center",
+    fontSize: 16,
+    marginTop: 12,
+    marginBottom: 18,
+  },
+  secondaryButton: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryButtonText: { color: colors.text, fontWeight: "800" },
 });

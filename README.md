@@ -1,23 +1,27 @@
-# Timesheet Mobile — Milestone 5
+# Timesheet Mobile — Milestone 6
 
-Adds editing and deletion for completed time entries.
+Adds a complete weekly/monthly Reports dashboard.
 
-## Included
+## Files included
 
-- Tap completed shifts from Timesheet or Calendar
-- Change job, work date, clock-in time, clock-out time, and notes
-- Live duration and estimated-pay preview
-- Validation for malformed dates/times and invalid ranges
-- Delete confirmation
-- Automatic refresh after returning to Timesheet or Calendar
-- No database migration or additional package required
+- `app/(tabs)/reports.tsx`
+- `app/(tabs)/_layout.tsx`
+- `hooks/useReports.ts`
+- `services/reportService.ts`
 
-## Apply
+## Install
 
-Copy this folder's contents into the existing project and replace matching files, then run:
+Copy these folders into the root of your existing project and replace matching files.
+
+Then run:
 
 ```bash
 npx expo start --clear
 ```
 
-Date fields use `YYYY-MM-DD`; time fields use 24-hour `HH:MM` format.
+## Notes
+
+- No database migration is required.
+- No new dependency is required.
+- Weekly overtime begins after 40 hours for the selected week.
+- Monthly reports show overtime as zero because overtime must be evaluated week-by-week; weekly aggregation across month boundaries is planned for the export/payroll milestone.
