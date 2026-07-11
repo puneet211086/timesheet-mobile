@@ -13,6 +13,9 @@ export type TimeEntry = {
   id: number;
   jobId: number;
   jobName: string;
+  hourlyRate: number;
+  overtimeMultiplier?: number;
+  jobColor?: string;
   clockIn: string;
   clockOut: string | null;
   notes: string | null;
@@ -21,4 +24,10 @@ export type TimeEntry = {
 export type DashboardSummary = {
   workedSeconds: number;
   estimatedPay: number;
+};
+
+export type WeeklySummary = DashboardSummary & {
+  regularSeconds: number;
+  overtimeSeconds: number;
+  targetSeconds: number;
 };

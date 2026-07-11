@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,8 +9,16 @@ import {
   View,
 } from 'react-native';
 import { MetricCard } from '../../components/MetricCard';
+import { ProgressCard } from '../../components/ProgressCard';
+import { RecentEntry } from '../../components/RecentEntry';
+import { colors, radius } from '../../constants/theme';
 import { useTimesheet } from '../../hooks/useTimesheet';
-import { formatClockTime, formatDuration } from '../../utils/time';
+import {
+  formatClockTime,
+  formatDuration,
+  formatHoursMinutes,
+  greetingForNow,
+} from '../../utils/time';
 
 export default function HomeScreen() {
   const {
@@ -18,30 +27,43 @@ export default function HomeScreen() {
     clockOut,
     jobs,
     loading,
+    now,
     selectedJob,
     selectedJobId,
     setSelectedJobId,
     summary,
+    todayEntries,
+    weeklySummary,
   } = useTimesheet();
 
   if (loading) {
     return (
       <SafeAreaView style={styles.loading}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
 
   const displayedJobName = activeEntry?.jobName ?? selectedJob?.name;
+  const recentEntries = todayEntries.slice(0, 3);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.eyebrow}>TIMESHEET</Text>
-        <Text style={styles.title}>Good day</Text>
-        <Text style={styles.subtitle}>Track your work without the paperwork.</Text>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.eyebrow}>{greetingForNow()}</Text>
+            <Text style={styles.title}>Your workday</Text>
+          </View>
+          <View style={styles.avatar}>
+            <Ionicons name="time-outline" size={24} color={colors.primary} />
+          </View>
+        </View>
 
-        {!activeEntry && jobs.length > 0 && (
+        {!activeEntry && jobs.length > 0 ? (
           <View style={styles.jobPickerSection}>
             <Text style={styles.sectionLabel}>CLOCK INTO</Text>
             <ScrollView
@@ -59,47 +81,55 @@ export default function HomeScreen() {
                       styles.jobChip,
                       selected && {
                         borderColor: job.color,
-                        backgroundColor: `${job.color}14`,
+                        backgroundColor: `${job.color}12`,
                       },
                     ]}
                   >
-                    <View style={[styles.jobColorDot, { backgroundColor: job.color }]} />
+                    <View style={[styles.jobDot, { backgroundColor: job.color }]} />
                     <View>
                       <Text style={styles.jobChipName}>{job.name}</Text>
-                      <Text style={styles.jobChipRate}>${job.hourlyRate.toFixed(2)}/hr</Text>
+                      <Text style={styles.jobChipRate}>
+                        ${job.hourlyRate.toFixed(2)}/hr
+                      </Text>
                     </View>
                   </Pressable>
                 );
               })}
             </ScrollView>
           </View>
-        )}
+        ) : null}
 
         <View style={styles.timerCard}>
           <View style={styles.statusRow}>
-            <View style={[styles.dot, activeEntry && styles.dotActive]} />
+            <View style={[styles.statusDot, activeEntry && styles.statusDotActive]} />
             <Text style={styles.statusText}>
               {activeEntry
-                ? `Clocked in at ${formatClockTime(activeEntry.clockIn)}`
-                : 'Not clocked in'}
+                ? `Working since ${formatClockTime(activeEntry.clockIn)}`
+                : 'Ready when you are'}
             </Text>
           </View>
 
           <Text style={styles.timer}>{formatDuration(summary.workedSeconds)}</Text>
-          <Text style={styles.jobName}>{displayedJobName ?? 'Create a job to begin'}</Text>
+          <Text style={styles.timerCaption}>
+            {displayedJobName ?? 'Create a job to begin'}
+          </Text>
 
           <Pressable
-            accessibilityRole="button"
             disabled={!selectedJob && !activeEntry}
             onPress={activeEntry ? clockOut : clockIn}
             style={({ pressed }) => [
-              styles.primaryButton,
-              activeEntry && styles.stopButton,
-              pressed && styles.buttonPressed,
-              !selectedJob && !activeEntry && styles.buttonDisabled,
+              styles.clockButton,
+              activeEntry && styles.clockOutButton,
+              pressed && styles.pressed,
+              !selectedJob && !activeEntry && styles.disabled,
             ]}
           >
-            <Text style={styles.primaryButtonText}>
+            <Ionicons
+              name={activeEntry ? 'stop-circle-outline' : 'play-circle-outline'}
+              size={22}
+              color={colors.white}
+            />
+            <Text style={styles.clockButtonText}>
               {activeEntry ? 'Clock Out' : 'Clock In'}
             </Text>
           </Pressable>
@@ -107,45 +137,85 @@ export default function HomeScreen() {
 
         <View style={styles.metricsRow}>
           <MetricCard
-            label="Today"
-            value={`${(summary.workedSeconds / 3600).toFixed(2)} hrs`}
+            label="Today’s hours"
+            value={formatHoursMinutes(summary.workedSeconds)}
+            icon={<Ionicons name="time-outline" size={20} color={colors.primary} />}
           />
           <MetricCard
-            label="Estimated pay"
+            label="Today’s earnings"
             value={`$${summary.estimatedPay.toFixed(2)}`}
+            icon={<Ionicons name="wallet-outline" size={20} color={colors.success} />}
           />
         </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Selected pay rate</Text>
-          <Text style={styles.infoValue}>
-            ${selectedJob?.hourlyRate.toFixed(2) ?? '0.00'} / hour
-          </Text>
-          <Text style={styles.infoHint}>Manage jobs and rates from the Jobs tab.</Text>
+        <ProgressCard
+          workedSeconds={weeklySummary.workedSeconds}
+          targetSeconds={weeklySummary.targetSeconds}
+          estimatedPay={weeklySummary.estimatedPay}
+        />
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent entries</Text>
+          <Text style={styles.sectionMeta}>{todayEntries.length} today</Text>
         </View>
+
+        {recentEntries.length > 0 ? (
+          recentEntries.map((entry) => (
+            <RecentEntry key={entry.id} entry={entry} now={now} />
+          ))
+        ) : (
+          <View style={styles.emptyCard}>
+            <Ionicons name="calendar-outline" size={24} color={colors.textSoft} />
+            <Text style={styles.emptyTitle}>No entries yet</Text>
+            <Text style={styles.emptyText}>
+              Choose a job and clock in to start tracking today.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F7F8FC' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 22, paddingBottom: 40 },
-  eyebrow: {
-    color: '#2563EB',
-    fontWeight: '800',
-    fontSize: 12,
-    letterSpacing: 1.8,
-    marginTop: 12,
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
   },
-  title: { color: '#111827', fontSize: 34, fontWeight: '800', marginTop: 8 },
-  subtitle: { color: '#6B7280', fontSize: 16, marginTop: 6, marginBottom: 22 },
-  jobPickerSection: { marginBottom: 18 },
-  sectionLabel: {
-    color: '#6B7280',
-    fontSize: 11,
+  container: { padding: 22, paddingBottom: 44, gap: 16 },
+  header: {
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  eyebrow: {
+    color: colors.primary,
     fontWeight: '800',
+    fontSize: 14,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 33,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E8F0FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  jobPickerSection: { marginTop: 6 },
+  sectionLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '900',
     letterSpacing: 1.2,
     marginBottom: 10,
   },
@@ -155,56 +225,81 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  jobColorDot: { width: 11, height: 11, borderRadius: 6 },
-  jobChipName: { color: '#111827', fontSize: 14, fontWeight: '800' },
-  jobChipRate: { color: '#6B7280', fontSize: 12, marginTop: 2 },
-  timerCard: { backgroundColor: '#111827', borderRadius: 28, padding: 24 },
+  jobDot: { width: 11, height: 11, borderRadius: 6 },
+  jobChipName: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  jobChipRate: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  timerCard: {
+    backgroundColor: colors.dark,
+    borderRadius: radius.xl,
+    padding: 24,
+    overflow: 'hidden',
+  },
   statusRow: { flexDirection: 'row', alignItems: 'center' },
-  dot: {
+  statusDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: '#6B7280',
     marginRight: 9,
   },
-  dotActive: { backgroundColor: '#22C55E' },
-  statusText: { color: '#D1D5DB', fontSize: 14, fontWeight: '600' },
+  statusDotActive: { backgroundColor: '#4ADE80' },
+  statusText: { color: '#D1D5DB', fontSize: 14, fontWeight: '700' },
   timer: {
-    color: '#FFFFFF',
-    fontSize: 48,
-    fontWeight: '800',
+    color: colors.white,
+    fontSize: 50,
+    fontWeight: '900',
     letterSpacing: 1,
     marginTop: 28,
   },
-  jobName: { color: '#9CA3AF', fontSize: 15, marginTop: 8 },
-  primaryButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 18,
+  timerCaption: { color: '#9CA3AF', fontSize: 15, marginTop: 7 },
+  clockButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
     paddingVertical: 17,
     alignItems: 'center',
-    marginTop: 30,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 9,
+    marginTop: 28,
   },
-  stopButton: { backgroundColor: '#DC2626' },
-  buttonPressed: { opacity: 0.82 },
-  buttonDisabled: { opacity: 0.45 },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
-  metricsRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  infoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginTop: 16,
+  clockOutButton: { backgroundColor: colors.danger },
+  clockButtonText: { color: colors.white, fontSize: 17, fontWeight: '900' },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
+  disabled: { opacity: 0.45 },
+  metricsRow: { flexDirection: 'row', gap: 12 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  sectionTitle: { color: colors.text, fontSize: 20, fontWeight: '900' },
+  sectionMeta: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
+    alignItems: 'center',
   },
-  infoTitle: { color: '#6B7280', fontSize: 13, fontWeight: '600' },
-  infoValue: { color: '#111827', fontSize: 22, fontWeight: '800', marginTop: 8 },
-  infoHint: { color: '#9CA3AF', fontSize: 13, marginTop: 8 },
+  emptyTitle: {
+    color: colors.text,
+    fontWeight: '900',
+    fontSize: 17,
+    marginTop: 12,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    marginTop: 6,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
 });

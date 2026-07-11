@@ -1,32 +1,23 @@
-# Timesheet Mobile — Milestone 2
+# Timesheet Mobile — Milestone 3 overlay
 
-This overlay adds multi-job time tracking to the Expo starter.
+This update adds the premium dashboard without changing the SQLite schema.
 
 ## Included
+- Reusable theme tokens
+- Live dashboard timer
+- Today hours and earnings cards
+- Monday–Sunday weekly summary
+- 40-hour progress bar
+- Weekly overtime pay calculation
+- Recent entries list
 
-- Persistent SQLite database
-- Safe migration from milestone 1
-- Create and edit jobs
-- Hourly and overtime rates
-- Job colors
-- Activate/deactivate jobs
-- Select a job before clocking in
-- Clock in/out and daily earnings
+## Apply
+Copy this folder's contents into the root of your existing project and replace matching files.
 
-## Apply to your existing project
-
-1. Stop Expo with `Ctrl+C`.
-2. Copy this folder's contents into your Expo project and replace matching files.
-3. Make sure the required packages are installed:
-
-```bash
-npx expo install expo-sqlite @expo/vector-icons
-```
-
-4. Restart with a clean cache:
+Then restart Expo:
 
 ```bash
 npx expo start --clear
 ```
 
-Your existing SQLite data will be retained. The migration adds the new job color and update timestamp fields automatically.
+No new npm packages or database reset are required.

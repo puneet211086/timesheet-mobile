@@ -1,15 +1,23 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors, radius } from '../constants/theme';
 
 type Props = {
   label: string;
   value: string;
+  icon?: ReactNode;
+  hint?: string;
 };
 
-export function MetricCard({ label, value }: Props) {
+export function MetricCard({ label, value, icon, hint }: Props) {
   return (
     <View style={styles.card}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.header}>
+        <Text style={styles.label}>{label}</Text>
+        {icon}
+      </View>
       <Text style={styles.value}>{value}</Text>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -17,22 +25,32 @@ export function MetricCard({ label, value }: Props) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    minHeight: 104,
-    borderRadius: 20,
+    minHeight: 124,
+    borderRadius: radius.lg,
     padding: 18,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   label: {
-    color: '#6B7280',
+    color: colors.textMuted,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   value: {
-    color: '#111827',
-    fontSize: 24,
-    fontWeight: '800',
-    marginTop: 12,
+    color: colors.text,
+    fontSize: 25,
+    fontWeight: '900',
+    marginTop: 16,
+  },
+  hint: {
+    color: colors.textSoft,
+    fontSize: 12,
+    marginTop: 6,
   },
 });
