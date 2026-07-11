@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -9,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useReports } from '../../hooks/useReports';
+import { exportReportCsv, exportReportPdf } from '../../services/exportService';
 
 function formatHours(seconds: number): string {
   return `${(seconds / 3600).toFixed(seconds >= 36000 ? 1 : 2)}h`;
@@ -37,6 +40,25 @@ export default function ReportsScreen() {
     setPeriod,
     title,
   } = useReports();
+  const [exporting, setExporting] = useState<'pdf' | 'csv' | null>(null);
+
+  const runExport = async (type: 'pdf' | 'csv') => {
+    if (report.shiftCount === 0) {
+      Alert.alert('Nothing to export', 'Complete at least one shift in this period first.');
+      return;
+    }
+
+    setExporting(type);
+    try {
+      if (type === 'pdf') await exportReportPdf(report, title, period);
+      else await exportReportCsv(report, title, period);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Export failed', 'The report could not be exported. Please try again.');
+    } finally {
+      setExporting(null);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -55,18 +77,10 @@ export default function ReportsScreen() {
           {(['week', 'month'] as const).map((value) => (
             <Pressable
               key={value}
-              style={[
-                styles.segment,
-                period === value && styles.segmentActive,
-              ]}
+              style={[styles.segment, period === value && styles.segmentActive]}
               onPress={() => setPeriod(value)}
             >
-              <Text
-                style={[
-                  styles.segmentText,
-                  period === value && styles.segmentTextActive,
-                ]}
-              >
+              <Text style={[styles.segmentText, period === value && styles.segmentTextActive]}>
                 {value === 'week' ? 'Weekly' : 'Monthly'}
               </Text>
             </Pressable>
@@ -75,29 +89,52 @@ export default function ReportsScreen() {
 
         <View style={styles.periodNavigator}>
           <Pressable style={styles.iconButton} onPress={() => movePeriod(-1)}>
-            <Ionicons name="chevron-back" size={22} color="#111827" />
+            <Ionicons name="chevron-back" size={21} color="#111827" />
           </Pressable>
           <Text style={styles.periodTitle}>{title}</Text>
           <Pressable style={styles.iconButton} onPress={() => movePeriod(1)}>
-            <Ionicons name="chevron-forward" size={22} color="#111827" />
+            <Ionicons name="chevron-forward" size={21} color="#111827" />
           </Pressable>
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color="#2563EB" style={styles.loader} />
+          <ActivityIndicator style={styles.loader} size="large" color="#2563EB" />
         ) : (
           <>
+            <View style={styles.exportRow}>
+              <Pressable
+                style={({ pressed }) => [styles.exportButton, pressed && styles.pressed]}
+                disabled={exporting !== null}
+                onPress={() => void runExport('pdf')}
+              >
+                {exporting === 'pdf' ? (
+                  <ActivityIndicator color="#2563EB" />
+                ) : (
+                  <Ionicons name="document-text-outline" size={20} color="#2563EB" />
+                )}
+                <Text style={styles.exportButtonText}>PDF</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.exportButton, pressed && styles.pressed]}
+                disabled={exporting !== null}
+                onPress={() => void runExport('csv')}
+              >
+                {exporting === 'csv' ? (
+                  <ActivityIndicator color="#2563EB" />
+                ) : (
+                  <Ionicons name="grid-outline" size={20} color="#2563EB" />
+                )}
+                <Text style={styles.exportButtonText}>CSV</Text>
+              </Pressable>
+            </View>
+
             <View style={styles.heroCard}>
               <Text style={styles.heroLabel}>ESTIMATED GROSS PAY</Text>
-              <Text style={styles.heroValue}>
-                {formatCurrency(report.estimatedPay)}
-              </Text>
+              <Text style={styles.heroValue}>{formatCurrency(report.estimatedPay)}</Text>
               <View style={styles.heroDivider} />
               <View style={styles.heroStats}>
                 <View>
-                  <Text style={styles.heroStatValue}>
-                    {formatHours(report.workedSeconds)}
-                  </Text>
+                  <Text style={styles.heroStatValue}>{formatHours(report.workedSeconds)}</Text>
                   <Text style={styles.heroStatLabel}>Total hours</Text>
                 </View>
                 <View>
@@ -114,47 +151,31 @@ export default function ReportsScreen() {
             <View style={styles.metricGrid}>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>Regular</Text>
-                <Text style={styles.metricValue}>
-                  {formatHours(report.regularSeconds)}
-                </Text>
+                <Text style={styles.metricValue}>{formatHours(report.regularSeconds)}</Text>
               </View>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>Overtime</Text>
-                <Text style={styles.metricValue}>
-                  {formatHours(report.overtimeSeconds)}
-                </Text>
+                <Text style={styles.metricValue}>{formatHours(report.overtimeSeconds)}</Text>
               </View>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>Daily average</Text>
-                <Text style={styles.metricValue}>
-                  {formatDuration(report.averageSecondsPerWorkDay)}
-                </Text>
+                <Text style={styles.metricValue}>{formatDuration(report.averageSecondsPerWorkDay)}</Text>
               </View>
             </View>
 
             <Text style={styles.sectionTitle}>Jobs</Text>
             <View style={styles.sectionCard}>
               {report.jobs.length === 0 ? (
-                <Text style={styles.emptyText}>
-                  No completed shifts in this period.
-                </Text>
+                <Text style={styles.emptyText}>No completed shifts in this period.</Text>
               ) : (
                 report.jobs.map((job, index) => (
                   <View
                     key={job.jobId}
-                    style={[
-                      styles.breakdownItem,
-                      index < report.jobs.length - 1 && styles.itemBorder,
-                    ]}
+                    style={[styles.breakdownItem, index < report.jobs.length - 1 && styles.itemBorder]}
                   >
                     <View style={styles.breakdownHeader}>
                       <View style={styles.jobIdentity}>
-                        <View
-                          style={[
-                            styles.jobDot,
-                            { backgroundColor: job.jobColor },
-                          ]}
-                        />
+                        <View style={[styles.jobDot, { backgroundColor: job.jobColor }]} />
                         <View>
                           <Text style={styles.itemTitle}>{job.jobName}</Text>
                           <Text style={styles.itemSubtitle}>
@@ -163,22 +184,15 @@ export default function ReportsScreen() {
                         </View>
                       </View>
                       <View style={styles.itemValues}>
-                        <Text style={styles.itemValue}>
-                          {formatHours(job.workedSeconds)}
-                        </Text>
-                        <Text style={styles.itemPay}>
-                          {formatCurrency(job.estimatedPay)}
-                        </Text>
+                        <Text style={styles.itemValue}>{formatHours(job.workedSeconds)}</Text>
+                        <Text style={styles.itemPay}>{formatCurrency(job.estimatedPay)}</Text>
                       </View>
                     </View>
                     <View style={styles.progressTrack}>
                       <View
                         style={[
                           styles.progressFill,
-                          {
-                            width: `${Math.max(2, job.percentage)}%`,
-                            backgroundColor: job.jobColor,
-                          },
+                          { width: `${Math.min(100, job.percentage)}%`, backgroundColor: job.jobColor },
                         ]}
                       />
                     </View>
@@ -197,10 +211,7 @@ export default function ReportsScreen() {
                 report.days.map((day, index) => (
                   <View
                     key={day.dateKey}
-                    style={[
-                      styles.dayRow,
-                      index < report.days.length - 1 && styles.itemBorder,
-                    ]}
+                    style={[styles.dayRow, index < report.days.length - 1 && styles.itemBorder]}
                   >
                     <View>
                       <Text style={styles.itemTitle}>{day.label}</Text>
@@ -209,12 +220,8 @@ export default function ReportsScreen() {
                       </Text>
                     </View>
                     <View style={styles.itemValues}>
-                      <Text style={styles.itemValue}>
-                        {formatHours(day.workedSeconds)}
-                      </Text>
-                      <Text style={styles.itemPay}>
-                        {formatCurrency(day.estimatedPay)}
-                      </Text>
+                      <Text style={styles.itemValue}>{formatHours(day.workedSeconds)}</Text>
+                      <Text style={styles.itemPay}>{formatCurrency(day.estimatedPay)}</Text>
                     </View>
                   </View>
                 ))
@@ -230,12 +237,7 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F7F8FC' },
   container: { padding: 20, paddingBottom: 40 },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   eyebrow: { fontSize: 12, fontWeight: '800', color: '#2563EB', letterSpacing: 1.3 },
   title: { fontSize: 32, fontWeight: '800', color: '#111827', marginTop: 3 },
   todayButton: { backgroundColor: '#E8EEFF', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
@@ -249,6 +251,10 @@ const styles = StyleSheet.create({
   iconButton: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   periodTitle: { color: '#111827', fontSize: 16, fontWeight: '800', textAlign: 'center', flex: 1 },
   loader: { marginTop: 80 },
+  exportRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  exportButton: { flex: 1, minHeight: 48, borderRadius: 15, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DBEAFE', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  exportButtonText: { color: '#2563EB', fontSize: 15, fontWeight: '800' },
+  pressed: { opacity: 0.7 },
   heroCard: { backgroundColor: '#1D4ED8', borderRadius: 24, padding: 22 },
   heroLabel: { color: '#BFDBFE', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   heroValue: { color: '#FFFFFF', fontSize: 40, fontWeight: '800', marginTop: 8 },

@@ -1,27 +1,32 @@
-# Timesheet Mobile — Milestone 6
+# Timesheet Mobile — Milestone 7
 
-Adds a complete weekly/monthly Reports dashboard.
+Adds PDF and CSV export to the Reports screen.
 
 ## Files included
 
 - `app/(tabs)/reports.tsx`
-- `app/(tabs)/_layout.tsx`
-- `hooks/useReports.ts`
-- `services/reportService.ts`
+- `services/exportService.ts`
 
 ## Install
 
-Copy these folders into the root of your existing project and replace matching files.
+Copy the included `app` and `services` folders into the root of your current project and replace matching files.
 
-Then run:
+Install the Expo-compatible filesystem package:
+
+```bash
+npx expo install expo-file-system
+```
+
+Restart Expo:
 
 ```bash
 npx expo start --clear
 ```
 
-## Notes
+## Behavior
 
-- No database migration is required.
-- No new dependency is required.
-- Weekly overtime begins after 40 hours for the selected week.
-- Monthly reports show overtime as zero because overtime must be evaluated week-by-week; weekly aggregation across month boundaries is planned for the export/payroll milestone.
+- **Web PDF:** opens the browser print dialog, where the user can save as PDF.
+- **iOS/Android PDF:** generates a PDF and opens the native share sheet.
+- **Web CSV:** downloads the CSV directly.
+- **iOS/Android CSV:** creates the CSV in cache and opens the native share sheet.
+- Exports use the currently selected weekly or monthly reporting period.
