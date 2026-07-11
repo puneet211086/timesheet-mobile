@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
-import type { DashboardSummary, Job, TimeEntry } from '../types/models';
+import type { Job, TimeEntry } from '../types/models';
 import {
   endOfLocalDayIso,
   endOfLocalWeekIso,
   startOfLocalDayIso,
   startOfLocalWeekIso,
 } from '../utils/time';
+import { payableDurationSeconds } from '../utils/entry';
 import { calculateWeeklySummary } from '../utils/pay';
 
 type JobRow = Omit<Job, 'isActive'> & { isActive: number };
-
-type EntryRow = TimeEntry;
 
 export function useTimesheet() {
   const db = useSQLiteContext();
@@ -33,7 +32,8 @@ export function useTimesheet() {
       j.color AS jobColor,
       te.clock_in AS clockIn,
       te.clock_out AS clockOut,
-      te.notes
+      te.notes,
+      te.unpaid_break_minutes AS unpaidBreakMinutes
     FROM time_entries te
     JOIN jobs j ON j.id = te.job_id
   `;
@@ -49,18 +49,17 @@ export function useTimesheet() {
       ORDER BY name COLLATE NOCASE
     `);
 
-    const activeJobs: Job[] = jobRows.map((row) => ({
+    const activeJobs = jobRows.map((row) => ({
       ...row,
       isActive: Boolean(row.isActive),
     }));
-
     setJobs(activeJobs);
     setSelectedJobId((current) => {
       if (current && activeJobs.some((job) => job.id === current)) return current;
       return activeJobs[0]?.id ?? null;
     });
 
-    const running = await db.getFirstAsync<EntryRow>(`
+    const running = await db.getFirstAsync<TimeEntry>(`
       ${entrySelect}
       WHERE te.clock_out IS NULL
       ORDER BY te.clock_in DESC
@@ -68,23 +67,26 @@ export function useTimesheet() {
     `);
     setActiveEntry(running ?? null);
 
-    const today = await db.getAllAsync<EntryRow>(
-      `${entrySelect}
-       WHERE te.clock_in BETWEEN ? AND ?
-       ORDER BY te.clock_in DESC`,
-      startOfLocalDayIso(),
-      endOfLocalDayIso()
+    setTodayEntries(
+      await db.getAllAsync<TimeEntry>(
+        `${entrySelect}
+         WHERE te.clock_in BETWEEN ? AND ?
+         ORDER BY te.clock_in DESC`,
+        startOfLocalDayIso(),
+        endOfLocalDayIso()
+      )
     );
-    setTodayEntries(today);
 
-    const week = await db.getAllAsync<EntryRow>(
-      `${entrySelect}
-       WHERE te.clock_in BETWEEN ? AND ?
-       ORDER BY te.clock_in DESC`,
-      startOfLocalWeekIso(),
-      endOfLocalWeekIso()
+    setWeekEntries(
+      await db.getAllAsync<TimeEntry>(
+        `${entrySelect}
+         WHERE te.clock_in BETWEEN ? AND ?
+         ORDER BY te.clock_in DESC`,
+        startOfLocalWeekIso(),
+        endOfLocalWeekIso()
+      )
     );
-    setWeekEntries(week);
+
     setLoading(false);
   }, [db]);
 
@@ -108,8 +110,8 @@ export function useTimesheet() {
     const timestamp = new Date().toISOString();
     await db.runAsync(
       `INSERT INTO time_entries
-       (job_id, clock_in, clock_out, created_at, updated_at)
-       VALUES (?, ?, NULL, ?, ?)`,
+        (job_id, clock_in, clock_out, unpaid_break_minutes, created_at, updated_at)
+       VALUES (?, ?, NULL, 0, ?, ?)`,
       selectedJob.id,
       timestamp,
       timestamp,
@@ -131,14 +133,15 @@ export function useTimesheet() {
     await refresh();
   }, [activeEntry, db, refresh]);
 
-  const summary = useMemo<DashboardSummary>(() => {
+  const summary = useMemo(() => {
     let workedSeconds = 0;
     let estimatedPay = 0;
     for (const entry of todayEntries) {
-      const end = entry.clockOut ? new Date(entry.clockOut).getTime() : now;
-      const seconds = Math.max(
-        0,
-        Math.floor((end - new Date(entry.clockIn).getTime()) / 1000)
+      const seconds = payableDurationSeconds(
+        entry.clockIn,
+        entry.clockOut,
+        entry.unpaidBreakMinutes,
+        now
       );
       workedSeconds += seconds;
       estimatedPay += (seconds / 3600) * entry.hourlyRate;

@@ -33,6 +33,7 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       clock_in TEXT NOT NULL,
       clock_out TEXT,
       notes TEXT,
+      unpaid_break_minutes INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (job_id) REFERENCES jobs(id)
@@ -42,7 +43,6 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       ON time_entries(clock_in);
   `);
 
-  // Upgrade databases created by milestone 1 without deleting user data.
   if (!(await columnExists(db, 'jobs', 'color'))) {
     await db.execAsync(
       `ALTER TABLE jobs ADD COLUMN color TEXT NOT NULL DEFAULT '#2563EB'`
@@ -56,6 +56,12 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     );
   }
 
+  if (!(await columnExists(db, 'time_entries', 'unpaid_break_minutes'))) {
+    await db.execAsync(
+      `ALTER TABLE time_entries ADD COLUMN unpaid_break_minutes INTEGER NOT NULL DEFAULT 0`
+    );
+  }
+
   const result = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) AS count FROM jobs'
   );
@@ -64,7 +70,7 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     const now = new Date().toISOString();
     await db.runAsync(
       `INSERT INTO jobs
-       (name, hourly_rate, overtime_multiplier, color, is_active, created_at, updated_at)
+        (name, hourly_rate, overtime_multiplier, color, is_active, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       'Main Job',
       25,

@@ -1,32 +1,28 @@
-# Timesheet Mobile — Milestone 7
+# Timesheet Mobile — Milestone 8: Unpaid Break Tracking
 
-Adds PDF and CSV export to the Reports screen.
+## Included
+- Safe SQLite migration adding `unpaid_break_minutes` to existing time entries
+- Preserves all existing jobs and shifts
+- Add common break lengths: 15, 30, 45, or 60 minutes
+- Enter a custom unpaid-break duration
+- Live paid-hours and earnings preview while editing
+- Break-aware Home dashboard, weekly totals, Timesheet, Reports, PDF, and CSV calculations
+- Break details displayed on recent and Timesheet entries
+- No new npm dependencies
 
-## Files included
+## Apply
+Copy this package into the existing project and replace matching files.
 
-- `app/(tabs)/reports.tsx`
-- `services/exportService.ts`
-
-## Install
-
-Copy the included `app` and `services` folders into the root of your current project and replace matching files.
-
-Install the Expo-compatible filesystem package:
-
-```bash
-npx expo install expo-file-system
-```
-
-Restart Expo:
+Then restart Expo so the SQLite migration runs:
 
 ```bash
 npx expo start --clear
 ```
 
-## Behavior
-
-- **Web PDF:** opens the browser print dialog, where the user can save as PDF.
-- **iOS/Android PDF:** generates a PDF and opens the native share sheet.
-- **Web CSV:** downloads the CSV directly.
-- **iOS/Android CSV:** creates the CSV in cache and opens the native share sheet.
-- Exports use the currently selected weekly or monthly reporting period.
+## Test
+1. Open a completed entry from Timesheet or Calendar.
+2. Select a 30-minute unpaid break and save.
+3. Confirm the shift's paid duration and earnings decrease.
+4. Confirm Home and Reports totals also decrease.
+5. Export PDF and CSV and verify they use the reduced paid hours.
+6. Reopen the entry, change the break to None, and save.

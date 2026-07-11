@@ -1,7 +1,7 @@
 import type { TimeEntry } from '../types/models';
+import { payableDurationSeconds } from '../utils/entry';
 
 export type ReportPeriod = 'week' | 'month';
-
 export type JobReport = {
   jobId: number;
   jobName: string;
@@ -13,7 +13,6 @@ export type JobReport = {
   shiftCount: number;
   percentage: number;
 };
-
 export type DailyReport = {
   dateKey: string;
   label: string;
@@ -21,7 +20,6 @@ export type DailyReport = {
   estimatedPay: number;
   shiftCount: number;
 };
-
 export type ReportSummary = {
   workedSeconds: number;
   regularSeconds: number;
@@ -38,11 +36,10 @@ const WEEKLY_OVERTIME_SECONDS = 40 * 60 * 60;
 
 export function getEntryDurationSeconds(entry: TimeEntry): number {
   if (!entry.clockOut) return 0;
-  return Math.max(
-    0,
-    Math.floor(
-      (new Date(entry.clockOut).getTime() - new Date(entry.clockIn).getTime()) / 1000
-    )
+  return payableDurationSeconds(
+    entry.clockIn,
+    entry.clockOut,
+    entry.unpaidBreakMinutes
   );
 }
 
@@ -57,26 +54,17 @@ function localDateKey(iso: string): string {
 function dayLabel(dateKey: string): string {
   const [year, month, day] = dateKey.split('-').map(Number);
   return new Date(year, month - 1, day).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
+    weekday: 'short', month: 'short', day: 'numeric',
   });
 }
 
-export function buildReport(
-  entries: TimeEntry[],
-  period: ReportPeriod
-): ReportSummary {
+export function buildReport(entries: TimeEntry[], period: ReportPeriod): ReportSummary {
   const completed = entries
     .filter((entry) => Boolean(entry.clockOut))
-    .sort(
-      (a, b) =>
-        new Date(a.clockIn).getTime() - new Date(b.clockIn).getTime()
-    );
+    .sort((a, b) => new Date(a.clockIn).getTime() - new Date(b.clockIn).getTime());
 
   const jobMap = new Map<number, Omit<JobReport, 'percentage'>>();
   const dayMap = new Map<string, DailyReport>();
-
   let workedSeconds = 0;
   let regularSeconds = 0;
   let overtimeSeconds = 0;
@@ -89,21 +77,17 @@ export function buildReport(
 
     let entryRegularSeconds = seconds;
     let entryOvertimeSeconds = 0;
-
     if (period === 'week') {
-      const regularCapacity = Math.max(
-        0,
-        WEEKLY_OVERTIME_SECONDS - weeklyRegularUsed
-      );
+      const regularCapacity = Math.max(0, WEEKLY_OVERTIME_SECONDS - weeklyRegularUsed);
       entryRegularSeconds = Math.min(seconds, regularCapacity);
       entryOvertimeSeconds = Math.max(0, seconds - entryRegularSeconds);
       weeklyRegularUsed += entryRegularSeconds;
     }
 
-    const overtimeMultiplier = entry.overtimeMultiplier ?? 1.5;
+    const multiplier = entry.overtimeMultiplier ?? 1.5;
     const entryPay =
       (entryRegularSeconds / 3600) * entry.hourlyRate +
-      (entryOvertimeSeconds / 3600) * entry.hourlyRate * overtimeMultiplier;
+      (entryOvertimeSeconds / 3600) * entry.hourlyRate * multiplier;
 
     workedSeconds += seconds;
     regularSeconds += entryRegularSeconds;
@@ -120,7 +104,6 @@ export function buildReport(
       estimatedPay: 0,
       shiftCount: 0,
     };
-
     existingJob.workedSeconds += seconds;
     existingJob.regularSeconds += entryRegularSeconds;
     existingJob.overtimeSeconds += entryOvertimeSeconds;
@@ -136,7 +119,6 @@ export function buildReport(
       estimatedPay: 0,
       shiftCount: 0,
     };
-
     existingDay.workedSeconds += seconds;
     existingDay.estimatedPay += entryPay;
     existingDay.shiftCount += 1;
@@ -146,8 +128,7 @@ export function buildReport(
   const jobs = Array.from(jobMap.values())
     .map((job) => ({
       ...job,
-      percentage:
-        workedSeconds > 0 ? (job.workedSeconds / workedSeconds) * 100 : 0,
+      percentage: workedSeconds > 0 ? (job.workedSeconds / workedSeconds) * 100 : 0,
     }))
     .sort((a, b) => b.workedSeconds - a.workedSeconds);
 
@@ -162,8 +143,7 @@ export function buildReport(
     estimatedPay,
     shiftCount: completed.length,
     workDayCount: days.length,
-    averageSecondsPerWorkDay:
-      days.length > 0 ? Math.round(workedSeconds / days.length) : 0,
+    averageSecondsPerWorkDay: days.length ? Math.round(workedSeconds / days.length) : 0,
     jobs,
     days,
   };

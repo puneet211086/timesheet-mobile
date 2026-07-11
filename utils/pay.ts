@@ -1,11 +1,7 @@
 import type { TimeEntry, WeeklySummary } from '../types/models';
+import { payableDurationSeconds } from './entry';
 
 const WEEKLY_TARGET_SECONDS = 40 * 60 * 60;
-
-function durationSeconds(entry: TimeEntry, now: number): number {
-  const end = entry.clockOut ? new Date(entry.clockOut).getTime() : now;
-  return Math.max(0, Math.floor((end - new Date(entry.clockIn).getTime()) / 1000));
-}
 
 export function calculateWeeklySummary(
   entries: TimeEntry[],
@@ -20,8 +16,16 @@ export function calculateWeeklySummary(
   );
 
   for (const entry of chronologicalEntries) {
-    const seconds = durationSeconds(entry, now);
-    const regularCapacity = Math.max(0, WEEKLY_TARGET_SECONDS - regularSecondsUsed);
+    const seconds = payableDurationSeconds(
+      entry.clockIn,
+      entry.clockOut,
+      entry.unpaidBreakMinutes,
+      now
+    );
+    const regularCapacity = Math.max(
+      0,
+      WEEKLY_TARGET_SECONDS - regularSecondsUsed
+    );
     const regularSeconds = Math.min(seconds, regularCapacity);
     const overtimeSeconds = Math.max(0, seconds - regularSeconds);
     const overtimeMultiplier = entry.overtimeMultiplier ?? 1.5;

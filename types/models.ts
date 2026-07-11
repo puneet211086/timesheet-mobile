@@ -19,6 +19,7 @@ export type TimeEntry = {
   clockIn: string;
   clockOut: string | null;
   notes: string | null;
+  unpaidBreakMinutes: number;
 };
 
 export type DashboardSummary = {
