@@ -20,8 +20,16 @@ export default function TimesheetScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.eyebrow}>TODAY</Text>
-        <Text style={styles.title}>Timesheet</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>TODAY</Text>
+            <Text style={styles.title}>Timesheet</Text>
+          </View>
+          <Pressable style={styles.addButton} onPress={() => router.push('/entries/new')}>
+            <Ionicons name="add" size={22} color={colors.white} />
+            <Text style={styles.addButtonText}>Add</Text>
+          </Pressable>
+        </View>
         <Text style={styles.subtitle}>Tap a completed shift to edit, add a break, or delete it.</Text>
 
         {todayEntries.length === 0 ? (
@@ -73,5 +81,5 @@ export default function TimesheetScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background }, container: { padding: 22, paddingBottom: 40 }, eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1.4, marginTop: 10 }, title: { fontSize: 34, fontWeight: '900', color: colors.text, marginTop: 4 }, subtitle: { color: colors.textMuted, fontSize: 15, marginTop: 7, marginBottom: 24 }, emptyCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 26, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }, emptyIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' }, emptyTitle: { color: colors.text, fontWeight: '900', fontSize: 18, marginTop: 14 }, emptyText: { color: colors.textMuted, marginTop: 8, lineHeight: 21, textAlign: 'center' }, entryCard: { backgroundColor: colors.surface, borderRadius: radius.md, marginBottom: 12, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', overflow: 'hidden' }, pressedCard: { opacity: 0.72 }, jobStripe: { width: 6 }, entryBody: { flex: 1, padding: 17 }, entryTopRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 }, entryText: { flex: 1 }, job: { color: colors.text, fontWeight: '900', fontSize: 16 }, time: { color: colors.textMuted, marginTop: 6 }, rightColumn: { alignItems: 'flex-end' }, duration: { color: colors.primary, fontWeight: '900', fontSize: 15 }, pay: { color: colors.textMuted, fontSize: 12, fontWeight: '700', marginTop: 5 }, breakText: { color: colors.warning, fontSize: 12, fontWeight: '800', marginTop: 10 }, notes: { color: colors.textMuted, fontSize: 13, marginTop: 10 }, editHintText: { color: colors.textSoft, fontSize: 12, fontWeight: '700', marginTop: 12, textAlign: 'right' }, runningHint: { color: colors.success, fontSize: 12, fontWeight: '800', marginTop: 12, textAlign: 'right' },
+  safeArea: { flex: 1, backgroundColor: colors.background }, headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }, headerText: { flex: 1 }, addButton: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 15, minHeight: 42, borderRadius: 21 }, addButtonText: { color: colors.white, fontWeight: '900' }, container: { padding: 22, paddingBottom: 40 }, eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1.4 }, title: { fontSize: 34, fontWeight: '900', color: colors.text, marginTop: 4 }, subtitle: { color: colors.textMuted, fontSize: 15, marginTop: 7, marginBottom: 24 }, emptyCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 26, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }, emptyIcon: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' }, emptyTitle: { color: colors.text, fontWeight: '900', fontSize: 18, marginTop: 14 }, emptyText: { color: colors.textMuted, marginTop: 8, lineHeight: 21, textAlign: 'center' }, entryCard: { backgroundColor: colors.surface, borderRadius: radius.md, marginBottom: 12, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', overflow: 'hidden' }, pressedCard: { opacity: 0.72 }, jobStripe: { width: 6 }, entryBody: { flex: 1, padding: 17 }, entryTopRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 }, entryText: { flex: 1 }, job: { color: colors.text, fontWeight: '900', fontSize: 16 }, time: { color: colors.textMuted, marginTop: 6 }, rightColumn: { alignItems: 'flex-end' }, duration: { color: colors.primary, fontWeight: '900', fontSize: 15 }, pay: { color: colors.textMuted, fontSize: 12, fontWeight: '700', marginTop: 5 }, breakText: { color: colors.warning, fontSize: 12, fontWeight: '800', marginTop: 10 }, notes: { color: colors.textMuted, fontSize: 13, marginTop: 10 }, editHintText: { color: colors.textSoft, fontSize: 12, fontWeight: '700', marginTop: 12, textAlign: 'right' }, runningHint: { color: colors.success, fontSize: 12, fontWeight: '800', marginTop: 12, textAlign: 'right' },
 });
