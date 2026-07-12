@@ -1,24 +1,33 @@
-# Timesheet Mobile — Milestone 10
+# Timesheet Mobile — Milestone 11 (iOS Polish)
 
-Adds manual time entry for past or missed shifts.
+Adds native date/time controls for manual entry and entry editing.
 
 ## Included
 
-- Add Entry button on the Timesheet tab
-- Manual job, date, clock-in, and clock-out selection
-- Unpaid break presets and custom minutes
-- Optional notes
-- Live paid-duration and earnings preview
-- Validation for invalid time ranges and breaks
-- Overlap protection against existing entries
-- Existing entries and database data remain unchanged
-- No new npm packages or database migration
+- Native iOS wheel date and time pickers
+- Native Android date/time dialogs
+- Web text-field fallback
+- Device-localized time display (12/24-hour)
+- Success haptic after saving on mobile
+- Existing break, overlap, validation, and delete behavior retained
+- No database migration
 
-## Apply
+## Install
 
-Copy the included `app` folder into the existing project and replace matching files.
-Then restart Expo with:
+Copy the included `app` and `components` folders into the project root and replace matching files.
+
+Install the Expo-compatible dependencies:
 
 ```bash
+npx expo install @react-native-community/datetimepicker expo-haptics
 npx expo start --clear
 ```
+
+## Test
+
+1. Open Timesheet > Add.
+2. Tap Date, Clock in, and Clock out on an iPhone.
+3. Confirm the wheel picker opens and Done closes it.
+4. Save and confirm the success haptic.
+5. Open a completed shift and verify the same controls on Edit Shift.
+6. Confirm web still shows typed date/time fields.

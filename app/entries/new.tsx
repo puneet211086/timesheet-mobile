@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { colors, radius, spacing } from '../../constants/theme';
+import NativeDateTimeField from '../../components/NativeDateTimeField';
 import type { Job } from '../../types/models';
 import { combineLocalDateAndTime } from '../../utils/entry';
 import { formatHoursMinutes } from '../../utils/time';
@@ -156,6 +158,7 @@ export default function NewEntryScreen() {
         now
       );
 
+      if (Platform.OS !== 'web') await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch (saveError) {
       console.error(saveError);
@@ -239,35 +242,20 @@ export default function NewEntryScreen() {
               </ScrollView>
             )}
 
-            <Text style={styles.label}>Date</Text>
-            <TextInput
+            <NativeDateTimeField
+              label="Date"
+              mode="date"
               value={dateValue}
-              onChangeText={setDateValue}
+              onChange={setDateValue}
               placeholder="YYYY-MM-DD"
-              autoCapitalize="none"
-              style={styles.input}
             />
 
             <View style={styles.twoColumns}>
               <View style={styles.column}>
-                <Text style={styles.label}>Clock in</Text>
-                <TextInput
-                  value={startTime}
-                  onChangeText={setStartTime}
-                  placeholder="09:00"
-                  keyboardType="numbers-and-punctuation"
-                  style={styles.input}
-                />
+                <NativeDateTimeField label="Clock in" mode="time" value={startTime} dateContext={dateValue} onChange={setStartTime} placeholder="09:00" />
               </View>
               <View style={styles.column}>
-                <Text style={styles.label}>Clock out</Text>
-                <TextInput
-                  value={endTime}
-                  onChangeText={setEndTime}
-                  placeholder="17:00"
-                  keyboardType="numbers-and-punctuation"
-                  style={styles.input}
-                />
+                <NativeDateTimeField label="Clock out" mode="time" value={endTime} dateContext={dateValue} onChange={setEndTime} placeholder="17:00" />
               </View>
             </View>
 

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { colors, radius, spacing } from '../../constants/theme';
+import NativeDateTimeField from '../../components/NativeDateTimeField';
 import type { Job, TimeEntry } from '../../types/models';
 import {
   combineLocalDateAndTime,
@@ -176,6 +178,7 @@ export default function EditEntryScreen() {
         new Date().toISOString(),
         entryId
       );
+      if (Platform.OS !== 'web') await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch (saveError) {
       console.error(saveError);
@@ -265,20 +268,17 @@ export default function EditEntryScreen() {
               })}
             </ScrollView>
 
-            <Text style={styles.label}>Date</Text>
-            <TextInput style={styles.input} value={dateValue} onChangeText={setDateValue} placeholder="YYYY-MM-DD" />
+            <NativeDateTimeField label="Date" mode="date" value={dateValue} onChange={setDateValue} placeholder="YYYY-MM-DD" />
 
             <View style={styles.timeRow}>
               <View style={styles.timeField}>
-                <Text style={styles.label}>Clock in</Text>
-                <TextInput style={styles.input} value={startTime} onChangeText={setStartTime} placeholder="08:00" />
+                <NativeDateTimeField label="Clock in" mode="time" value={startTime} dateContext={dateValue} onChange={setStartTime} placeholder="08:00" />
               </View>
               <View style={styles.timeField}>
-                <Text style={styles.label}>Clock out</Text>
-                <TextInput style={styles.input} value={endTime} onChangeText={setEndTime} placeholder="17:00" />
+                <NativeDateTimeField label="Clock out" mode="time" value={endTime} dateContext={dateValue} onChange={setEndTime} placeholder="17:00" />
               </View>
             </View>
-            <Text style={styles.helper}>Use 24-hour time, for example 17:30.</Text>
+            {Platform.OS === 'web' ? <Text style={styles.helper}>Use 24-hour time, for example 17:30.</Text> : null}
 
             <Text style={styles.label}>Unpaid break</Text>
             <View style={styles.breakRow}>
