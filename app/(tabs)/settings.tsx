@@ -195,6 +195,16 @@ export default function SettingsScreen() {
           <Text style={styles.infoText}>Reminders are scheduled locally on your phone. No account or cloud service is required.</Text>
         </View>
 
+        <Text style={[styles.sectionLabel, styles.sectionSpacing]}>APP PREFERENCES</Text>
+        <View style={styles.card}>
+          <SettingsRow
+            icon="options-outline"
+            title="Display & Formatting"
+            description="Currency, week start, time format, and appearance."
+            onPress={() => router.push("/preferences")}
+          />
+        </View>
+
         <Text style={[styles.sectionLabel, styles.sectionSpacing]}>DATA MANAGEMENT</Text>
         <View style={styles.card}>
           <SettingsRow

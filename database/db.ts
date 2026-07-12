@@ -103,6 +103,22 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     'false'
   );
 
+
+  const preferenceDefaults: Array<[string, string]> = [
+    ['currency_code', 'USD'],
+    ['week_start', 'monday'],
+    ['time_format', 'system'],
+    ['appearance_mode', 'system'],
+  ];
+
+  for (const [key, value] of preferenceDefaults) {
+    await db.runAsync(
+      `INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)`,
+      key,
+      value
+    );
+  }
+
   const result = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) AS count FROM jobs'
   );
