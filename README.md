@@ -1,28 +1,27 @@
-# Timesheet Mobile — Milestone 19
+# Timesheet Mobile — Milestone 20
 
-Adds safer backup inspection and restore controls.
+Adds a polished first-launch onboarding experience.
 
 ## Included
 
-- Backup preview before restore
-- Current-device record counts
-- Export date, shift range, and record counts
-- Stronger backup format validation
-- Duplicate ID and duplicate setting detection
-- Orphan job-reference detection
-- Invalid date, pay-rate, and break validation
-- Warnings for active shifts and empty backups
-- Transactional restore retained
-- Face ID and notification identifiers remain excluded
-- No database migration
-- No new packages
+- Four-step first-launch onboarding
+- Local-first privacy explanation
+- First job name and hourly-rate setup
+- Dashboard, reports, and backup introduction
+- Completion stored in `app_settings`
+- Onboarding appears only once
+- Existing Face ID and Preferences providers preserved
+- Success haptic on mobile
+- No new npm packages
+- Replaced current confirmToggle with web-safe version
 
 ## Install
 
 Copy these folders into the project root and replace matching files:
 
 - `app/`
-- `services/`
+- `components/`
+- `database/`
 
 Then restart:
 
@@ -30,12 +29,31 @@ Then restart:
 npx expo start --clear
 ```
 
-## Test
+## Testing an existing installation
 
-1. Open Settings > Backup & Restore.
-2. Export a current backup.
-3. Choose the exported file.
-4. Verify the preview shows counts, export date, and shift range.
-5. Confirm no data changes until `Replace data with this backup` is pressed.
-6. Test an invalid JSON file and confirm it is rejected.
-7. Restore the valid backup and verify Dashboard, Calendar, Reports, and Templates.
+Existing databases will receive:
+
+```text
+onboarding_completed = false
+```
+
+so the onboarding appears once after installing this milestone.
+
+To test it again later, run this temporarily from a debug action or SQLite viewer:
+
+```sql
+UPDATE app_settings
+SET value = 'false'
+WHERE key = 'onboarding_completed';
+```
+
+Then restart the app.
+
+## Test flow
+
+1. Launch the app.
+2. Move through the welcome and privacy screens.
+3. Rename the starter job and change its hourly rate.
+4. Finish onboarding.
+5. Confirm the Home screen uses the updated job.
+6. Restart the app and confirm onboarding does not appear again.
