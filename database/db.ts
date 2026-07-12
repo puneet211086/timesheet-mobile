@@ -45,6 +45,19 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       value TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS shift_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      job_id INTEGER,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      unpaid_break_minutes INTEGER NOT NULL DEFAULT 0,
+      notes TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_time_entries_clock_in
       ON time_entries(clock_in);
   `);

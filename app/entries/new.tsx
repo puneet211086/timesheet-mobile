@@ -22,6 +22,7 @@ import { combineLocalDateAndTime } from '../../utils/entry';
 import { formatHoursMinutes } from '../../utils/time';
 
 type JobRow = Omit<Job, 'isActive'> & { isActive: number };
+type ShiftTemplate = { id: number; name: string; jobId: number | null; startTime: string; endTime: string; unpaidBreakMinutes: number; notes: string | null; };
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -41,6 +42,7 @@ export default function NewEntryScreen() {
   const db = useSQLiteContext();
 
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [jobId, setJobId] = useState<number | null>(null);
   const [dateValue, setDateValue] = useState(todayInputValue());
   const [startTime, setStartTime] = useState('09:00');
@@ -52,21 +54,30 @@ export default function NewEntryScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    db.getAllAsync<JobRow>(
-      `SELECT id, name, hourly_rate AS hourlyRate,
-        overtime_multiplier AS overtimeMultiplier, color,
-        is_active AS isActive, created_at AS createdAt,
-        updated_at AS updatedAt
-       FROM jobs
-       WHERE is_active = 1
-       ORDER BY name COLLATE NOCASE`
-    )
-      .then((rows) => {
+    Promise.all([
+      db.getAllAsync<JobRow>(
+        `SELECT id, name, hourly_rate AS hourlyRate,
+          overtime_multiplier AS overtimeMultiplier, color,
+          is_active AS isActive, created_at AS createdAt,
+          updated_at AS updatedAt
+         FROM jobs
+         WHERE is_active = 1
+         ORDER BY name COLLATE NOCASE`
+      ),
+      db.getAllAsync<ShiftTemplate>(
+        `SELECT id, name, job_id AS jobId, start_time AS startTime,
+          end_time AS endTime, unpaid_break_minutes AS unpaidBreakMinutes, notes
+         FROM shift_templates
+         ORDER BY name COLLATE NOCASE`
+      ),
+    ])
+      .then(([rows, templateRows]) => {
         const activeJobs = rows.map((job) => ({
           ...job,
           isActive: Boolean(job.isActive),
         }));
         setJobs(activeJobs);
+        setTemplates(templateRows);
         setJobId(activeJobs[0]?.id ?? null);
       })
       .catch((loadError) => {
@@ -194,6 +205,36 @@ export default function NewEntryScreen() {
               <Text style={styles.title}>Add shift</Text>
             </View>
           </View>
+
+          {templates.length > 0 ? (
+            <View style={styles.templateSection}>
+              <View style={styles.templateHeader}>
+                <Text style={styles.templateLabel}>QUICK TEMPLATES</Text>
+                <Pressable onPress={() => router.push('/templates')}>
+                  <Text style={styles.manageTemplates}>Manage</Text>
+                </Pressable>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.jobRow}>
+                {templates.map((template) => (
+                  <Pressable
+                    key={template.id}
+                    style={styles.templateChip}
+                    onPress={() => {
+                      if (template.jobId && jobs.some((job) => job.id === template.jobId)) setJobId(template.jobId);
+                      setStartTime(template.startTime);
+                      setEndTime(template.endTime);
+                      setBreakMinutes(String(template.unpaidBreakMinutes));
+                      setNotes(template.notes ?? '');
+                      setError(null);
+                    }}
+                  >
+                    <Ionicons name="flash-outline" size={16} color={colors.primary} />
+                    <Text style={styles.templateChipText}>{template.name}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
 
           <View style={styles.previewCard}>
             <Text style={styles.previewLabel}>Paid time after break</Text>
@@ -364,4 +405,10 @@ const styles = StyleSheet.create({
   saveButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
   buttonPressed: { opacity: 0.78 },
   buttonDisabled: { opacity: 0.55 },
+  templateSection: { marginBottom: spacing.md },
+  templateHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  templateLabel: { color: colors.muted, fontSize: 12, fontWeight: '800', letterSpacing: 1.1 },
+  manageTemplates: { color: colors.primary, fontSize: 13, fontWeight: '800' },
+  templateChip: { flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 40, paddingHorizontal: 13, borderRadius: 999, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' },
+  templateChipText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
 });
