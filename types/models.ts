@@ -1,4 +1,4 @@
-export type Job = {
+export interface Job {
   id: number;
   name: string;
   hourlyRate: number;
@@ -7,28 +7,23 @@ export type Job = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-};
+}
 
-export type TimeEntry = {
+export interface TimeEntry {
   id: number;
   jobId: number;
   jobName: string;
   hourlyRate: number;
-  overtimeMultiplier?: number;
-  jobColor?: string;
+  overtimeMultiplier: number;
+  jobColor: string;
   clockIn: string;
   clockOut: string | null;
   notes: string | null;
   unpaidBreakMinutes: number;
-};
+  reminderNotificationId?: string | null;
+}
 
-export type DashboardSummary = {
+export interface DashboardSummary {
   workedSeconds: number;
   estimatedPay: number;
-};
-
-export type WeeklySummary = DashboardSummary & {
-  regularSeconds: number;
-  overtimeSeconds: number;
-  targetSeconds: number;
-};
+}

@@ -1,28 +1,38 @@
-# Timesheet Mobile — Milestone 8: Unpaid Break Tracking
+# Timesheet Mobile — Milestone 9
 
-## Included
-- Safe SQLite migration adding `unpaid_break_minutes` to existing time entries
-- Preserves all existing jobs and shifts
-- Add common break lengths: 15, 30, 45, or 60 minutes
-- Enter a custom unpaid-break duration
-- Live paid-hours and earnings preview while editing
-- Break-aware Home dashboard, weekly totals, Timesheet, Reports, PDF, and CSV calculations
-- Break details displayed on recent and Timesheet entries
-- No new npm dependencies
+Adds local forgotten-clock-out reminders.
 
-## Apply
-Copy this package into the existing project and replace matching files.
+## Files included
 
-Then restart Expo so the SQLite migration runs:
+- `app/(tabs)/settings.tsx`
+- `database/db.ts`
+- `hooks/useTimesheet.ts`
+- `services/notificationService.ts`
+- `types/models.ts`
+
+## Install
+
+Copy the included folders into the root of the existing Milestone 8 project and replace matching files.
+
+`expo-notifications` is already listed in the project dependencies. To confirm the SDK-compatible version, run:
+
+```bash
+npx expo install expo-notifications
+```
+
+Restart Expo:
 
 ```bash
 npx expo start --clear
 ```
 
-## Test
-1. Open a completed entry from Timesheet or Calendar.
-2. Select a 30-minute unpaid break and save.
-3. Confirm the shift's paid duration and earnings decrease.
-4. Confirm Home and Reports totals also decrease.
-5. Export PDF and CSV and verify they use the reduced paid hours.
-6. Reopen the entry, change the break to None, and save.
+## Test on iOS or Android
+
+1. Open Settings.
+2. Enable the forgotten clock-out reminder and allow notification permission.
+3. Pick the reminder threshold.
+4. Press **Send test notification**.
+5. Clock in. A local notification is scheduled.
+6. Clock out. The scheduled notification is canceled.
+
+Local reminders are not enabled on the web build. Expo Go supports local notifications on iOS and Android. Remote push notifications are not part of this milestone.

@@ -9,6 +9,10 @@ import {
 } from '../utils/time';
 import { payableDurationSeconds } from '../utils/entry';
 import { calculateWeeklySummary } from '../utils/pay';
+import {
+  cancelScheduledReminder,
+  scheduleForgottenClockOutReminder,
+} from '../services/notificationService';
 
 type JobRow = Omit<Job, 'isActive'> & { isActive: number };
 
@@ -33,7 +37,8 @@ export function useTimesheet() {
       te.clock_in AS clockIn,
       te.clock_out AS clockOut,
       te.notes,
-      te.unpaid_break_minutes AS unpaidBreakMinutes
+      te.unpaid_break_minutes AS unpaidBreakMinutes,
+      te.reminder_notification_id AS reminderNotificationId
     FROM time_entries te
     JOIN jobs j ON j.id = te.job_id
   `;
@@ -108,7 +113,7 @@ export function useTimesheet() {
   const clockIn = useCallback(async () => {
     if (!selectedJob || activeEntry) return;
     const timestamp = new Date().toISOString();
-    await db.runAsync(
+    const result = await db.runAsync(
       `INSERT INTO time_entries
         (job_id, clock_in, clock_out, unpaid_break_minutes, created_at, updated_at)
        VALUES (?, ?, NULL, 0, ?, ?)`,
@@ -117,6 +122,34 @@ export function useTimesheet() {
       timestamp,
       timestamp
     );
+
+    const settings = await db.getAllAsync<{ key: string; value: string }>(
+      `SELECT key, value FROM app_settings
+       WHERE key IN ('shift_reminder_enabled', 'shift_reminder_hours')`
+    );
+    const settingMap = Object.fromEntries(
+      settings.map((setting) => [setting.key, setting.value])
+    );
+
+    if (settingMap.shift_reminder_enabled === 'true') {
+      const reminderHours = Number(settingMap.shift_reminder_hours ?? '8');
+      const notificationId = await scheduleForgottenClockOutReminder(
+        Number.isFinite(reminderHours) ? reminderHours : 8,
+        selectedJob.name
+      );
+
+      if (notificationId) {
+        await db.runAsync(
+          `UPDATE time_entries
+           SET reminder_notification_id = ?, updated_at = ?
+           WHERE id = ?`,
+          notificationId,
+          new Date().toISOString(),
+          result.lastInsertRowId
+        );
+      }
+    }
+
     setNow(Date.now());
     await refresh();
   }, [activeEntry, db, refresh, selectedJob]);
@@ -124,8 +157,11 @@ export function useTimesheet() {
   const clockOut = useCallback(async () => {
     if (!activeEntry) return;
     const timestamp = new Date().toISOString();
+    await cancelScheduledReminder(activeEntry.reminderNotificationId);
     await db.runAsync(
-      `UPDATE time_entries SET clock_out = ?, updated_at = ? WHERE id = ?`,
+      `UPDATE time_entries
+       SET clock_out = ?, reminder_notification_id = NULL, updated_at = ?
+       WHERE id = ?`,
       timestamp,
       timestamp,
       activeEntry.id

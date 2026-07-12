@@ -34,9 +34,15 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       clock_out TEXT,
       notes TEXT,
       unpaid_break_minutes INTEGER NOT NULL DEFAULT 0,
+      reminder_notification_id TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (job_id) REFERENCES jobs(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
     );
 
     CREATE INDEX IF NOT EXISTS idx_time_entries_clock_in
@@ -61,6 +67,23 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       `ALTER TABLE time_entries ADD COLUMN unpaid_break_minutes INTEGER NOT NULL DEFAULT 0`
     );
   }
+
+  if (!(await columnExists(db, 'time_entries', 'reminder_notification_id'))) {
+    await db.execAsync(
+      `ALTER TABLE time_entries ADD COLUMN reminder_notification_id TEXT`
+    );
+  }
+
+  await db.runAsync(
+    `INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)`,
+    'shift_reminder_enabled',
+    'false'
+  );
+  await db.runAsync(
+    `INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)`,
+    'shift_reminder_hours',
+    '8'
+  );
 
   const result = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) AS count FROM jobs'
