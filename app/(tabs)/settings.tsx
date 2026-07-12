@@ -195,6 +195,23 @@ export default function SettingsScreen() {
           <Text style={styles.infoText}>Reminders are scheduled locally on your phone. No account or cloud service is required.</Text>
         </View>
 
+        <Text style={[styles.sectionLabel, styles.sectionSpacing]}>DATA MANAGEMENT</Text>
+        <View style={styles.card}>
+          <SettingsRow
+            icon="copy-outline"
+            title="Shift Templates"
+            description="Create reusable schedules for faster manual entry."
+            onPress={() => router.push("/templates")}
+          />
+          <View style={styles.dividerCompact} />
+          <SettingsRow
+            icon="cloud-download-outline"
+            title="Backup & Restore"
+            description="Export a complete local backup or restore one from a file."
+            onPress={() => router.push("/data/backup")}
+          />
+        </View>
+
         <Text style={[styles.sectionLabel, styles.sectionSpacing]}>HELP & LEGAL</Text>
         <View style={styles.card}>
           <SettingsRow icon="shield-checkmark-outline" title="Privacy Policy" description="Learn how your timesheet data is stored and used." onPress={() => router.push("/legal/privacy")} />

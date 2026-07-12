@@ -1,52 +1,40 @@
-# Timesheet Mobile — Milestone 15
+# Timesheet Mobile — Milestone 16
 
-Adds an optional local app lock using Face ID, Touch ID, or device authentication.
+Adds complete local backup and restore for the local-first app.
 
 ## Included
-- App-lock switch in Settings
-- Device capability and enrollment checks
-- Authentication before enabling the lock
-- Lock when the app returns from the background
-- Unlock screen with retry support
-- Device passcode fallback
-- Web-safe behavior
-- Safe `app_settings` migration
+- Export jobs, shifts, breaks, templates, and most settings as JSON
+- Native iOS/Android share sheet
+- Browser download support
+- Restore from a selected backup file
+- Transactional replacement of local data
+- Backup-format validation
+- Restore confirmation and privacy warning
+- Face ID setting and notification IDs intentionally excluded
+- Shift Templates link restored in Settings
+- No database migration
 
 ## Install
-Copy these folders/files into your project and replace matching files:
+Copy the included folders into the project root and replace matching files:
 
 - `app/`
-- `components/`
-- `database/`
+- `services/`
 
-Install the Expo-compatible dependency:
+Install the Expo-compatible document picker:
 
 ```bash
-npx expo install expo-local-authentication
+npx expo install expo-document-picker
 npx expo start --clear
 ```
 
-## Required app.json change
-Do **not** replace your full `app.json`. Merge the following entry into the existing `expo.plugins` array:
-
-```json
-[
-  "expo-local-authentication",
-  {
-    "faceIDPermission": "Allow Timesheet Mobile to use Face ID to protect your timesheets."
-  }
-]
-```
-
-The included `app-json-plugin-snippet.json` shows the required structure.
-
-## Testing limitation
-Face ID is not supported in Expo Go on iOS. Test Face ID with an iOS development build or TestFlight build. Touch ID/device authentication availability depends on the device and environment.
+The project already uses `expo-file-system` and `expo-sharing` from the export milestone.
 
 ## Test
-1. Open Settings.
-2. Enable **Require Face ID or device authentication**.
-3. Authenticate when prompted.
-4. Send the app to the background.
-5. Reopen it and confirm the lock screen appears.
-6. Disable the setting and confirm the app no longer locks.
+1. Create sample jobs, shifts, and a template.
+2. Open Settings > Backup & Restore.
+3. Export a backup and save it to Files.
+4. Add or change a record.
+5. Restore the saved JSON backup.
+6. Confirm the original jobs, shifts, reports, and templates return.
+
+Always export a fresh backup before testing restore with important data.
