@@ -1,34 +1,52 @@
-export type Job = {
+export interface Job {
   id: number;
   name: string;
   hourlyRate: number;
   overtimeMultiplier: number;
+  overtimeEnabled: boolean;
+  weeklyOvertimeEnabled: boolean;
+  weeklyOvertimeHours: number;
+  dailyOvertimeEnabled: boolean;
+  dailyOvertimeHours: number;
+  doubleTimeEnabled: boolean;
+  doubleTimeHours: number;
+  doubleTimeMultiplier: number;
   color: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-};
+}
 
-export type TimeEntry = {
+export interface TimeEntry {
   id: number;
   jobId: number;
   jobName: string;
   hourlyRate: number;
-  overtimeMultiplier?: number;
-  jobColor?: string;
+  overtimeMultiplier: number;
+  overtimeEnabled: boolean;
+  weeklyOvertimeEnabled: boolean;
+  weeklyOvertimeHours: number;
+  dailyOvertimeEnabled: boolean;
+  dailyOvertimeHours: number;
+  doubleTimeEnabled: boolean;
+  doubleTimeHours: number;
+  doubleTimeMultiplier: number;
+  jobColor: string;
   clockIn: string;
   clockOut: string | null;
   notes: string | null;
-  unpaidBreakMinutes?: number;
-};
+  unpaidBreakMinutes: number;
+  reminderNotificationId?: string | null;
+}
 
-export type DashboardSummary = {
+export interface DashboardSummary {
   workedSeconds: number;
   estimatedPay: number;
-};
+}
 
-export type WeeklySummary = DashboardSummary & {
+export interface WeeklySummary extends DashboardSummary {
   regularSeconds: number;
   overtimeSeconds: number;
+  doubleTimeSeconds: number;
   targetSeconds: number;
-};
+}

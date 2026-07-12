@@ -1,7 +1,8 @@
 import type { TimeEntry } from '../types/models';
-import { payableDurationSeconds } from '../utils/entry';
+import { calculatePayroll } from '../utils/pay';
 
 export type ReportPeriod = 'week' | 'month';
+
 export type JobReport = {
   jobId: number;
   jobName: string;
@@ -9,21 +10,28 @@ export type JobReport = {
   workedSeconds: number;
   regularSeconds: number;
   overtimeSeconds: number;
+  doubleTimeSeconds: number;
   estimatedPay: number;
   shiftCount: number;
   percentage: number;
 };
+
 export type DailyReport = {
   dateKey: string;
   label: string;
   workedSeconds: number;
+  regularSeconds: number;
+  overtimeSeconds: number;
+  doubleTimeSeconds: number;
   estimatedPay: number;
   shiftCount: number;
 };
+
 export type ReportSummary = {
   workedSeconds: number;
   regularSeconds: number;
   overtimeSeconds: number;
+  doubleTimeSeconds: number;
   estimatedPay: number;
   shiftCount: number;
   workDayCount: number;
@@ -32,118 +40,106 @@ export type ReportSummary = {
   days: DailyReport[];
 };
 
-const WEEKLY_OVERTIME_SECONDS = 40 * 60 * 60;
-
-export function getEntryDurationSeconds(entry: TimeEntry): number {
-  if (!entry.clockOut) return 0;
-  return payableDurationSeconds(
-    entry.clockIn,
-    entry.clockOut,
-    entry.unpaidBreakMinutes
-  );
-}
-
 function localDateKey(iso: string): string {
   const date = new Date(iso);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
 }
 
 function dayLabel(dateKey: string): string {
   const [year, month, day] = dateKey.split('-').map(Number);
   return new Date(year, month - 1, day).toLocaleDateString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
   });
 }
 
-export function buildReport(entries: TimeEntry[], period: ReportPeriod): ReportSummary {
+export function buildReport(
+  entries: TimeEntry[],
+  _period: ReportPeriod,
+): ReportSummary {
   const completed = entries
     .filter((entry) => Boolean(entry.clockOut))
-    .sort((a, b) => new Date(a.clockIn).getTime() - new Date(b.clockIn).getTime());
+    .sort(
+      (a, b) =>
+        new Date(a.clockIn).getTime() - new Date(b.clockIn).getTime(),
+    );
 
+  const payroll = calculatePayroll(completed);
   const jobMap = new Map<number, Omit<JobReport, 'percentage'>>();
   const dayMap = new Map<string, DailyReport>();
-  let workedSeconds = 0;
-  let regularSeconds = 0;
-  let overtimeSeconds = 0;
-  let estimatedPay = 0;
-  let weeklyRegularUsed = 0;
 
   for (const entry of completed) {
-    const seconds = getEntryDurationSeconds(entry);
-    if (seconds <= 0) continue;
+    const allocation = payroll.byEntryId.get(entry.id);
+    if (!allocation || allocation.workedSeconds <= 0) continue;
 
-    let entryRegularSeconds = seconds;
-    let entryOvertimeSeconds = 0;
-    if (period === 'week') {
-      const regularCapacity = Math.max(0, WEEKLY_OVERTIME_SECONDS - weeklyRegularUsed);
-      entryRegularSeconds = Math.min(seconds, regularCapacity);
-      entryOvertimeSeconds = Math.max(0, seconds - entryRegularSeconds);
-      weeklyRegularUsed += entryRegularSeconds;
-    }
-
-    const multiplier = entry.overtimeMultiplier ?? 1.5;
-    const entryPay =
-      (entryRegularSeconds / 3600) * entry.hourlyRate +
-      (entryOvertimeSeconds / 3600) * entry.hourlyRate * multiplier;
-
-    workedSeconds += seconds;
-    regularSeconds += entryRegularSeconds;
-    overtimeSeconds += entryOvertimeSeconds;
-    estimatedPay += entryPay;
-
-    const existingJob = jobMap.get(entry.jobId) ?? {
+    const job = jobMap.get(entry.jobId) ?? {
       jobId: entry.jobId,
       jobName: entry.jobName,
       jobColor: entry.jobColor ?? '#2563EB',
       workedSeconds: 0,
       regularSeconds: 0,
       overtimeSeconds: 0,
+      doubleTimeSeconds: 0,
       estimatedPay: 0,
       shiftCount: 0,
     };
-    existingJob.workedSeconds += seconds;
-    existingJob.regularSeconds += entryRegularSeconds;
-    existingJob.overtimeSeconds += entryOvertimeSeconds;
-    existingJob.estimatedPay += entryPay;
-    existingJob.shiftCount += 1;
-    jobMap.set(entry.jobId, existingJob);
 
-    const dateKey = localDateKey(entry.clockIn);
-    const existingDay = dayMap.get(dateKey) ?? {
-      dateKey,
-      label: dayLabel(dateKey),
+    job.workedSeconds += allocation.workedSeconds;
+    job.regularSeconds += allocation.regularSeconds;
+    job.overtimeSeconds += allocation.overtimeSeconds;
+    job.doubleTimeSeconds += allocation.doubleTimeSeconds;
+    job.estimatedPay += allocation.grossPay;
+    job.shiftCount += 1;
+    jobMap.set(entry.jobId, job);
+
+    const key = localDateKey(entry.clockIn);
+    const day = dayMap.get(key) ?? {
+      dateKey: key,
+      label: dayLabel(key),
       workedSeconds: 0,
+      regularSeconds: 0,
+      overtimeSeconds: 0,
+      doubleTimeSeconds: 0,
       estimatedPay: 0,
       shiftCount: 0,
     };
-    existingDay.workedSeconds += seconds;
-    existingDay.estimatedPay += entryPay;
-    existingDay.shiftCount += 1;
-    dayMap.set(dateKey, existingDay);
+
+    day.workedSeconds += allocation.workedSeconds;
+    day.regularSeconds += allocation.regularSeconds;
+    day.overtimeSeconds += allocation.overtimeSeconds;
+    day.doubleTimeSeconds += allocation.doubleTimeSeconds;
+    day.estimatedPay += allocation.grossPay;
+    day.shiftCount += 1;
+    dayMap.set(key, day);
   }
 
   const jobs = Array.from(jobMap.values())
     .map((job) => ({
       ...job,
-      percentage: workedSeconds > 0 ? (job.workedSeconds / workedSeconds) * 100 : 0,
+      percentage:
+        payroll.workedSeconds > 0
+          ? (job.workedSeconds / payroll.workedSeconds) * 100
+          : 0,
     }))
     .sort((a, b) => b.workedSeconds - a.workedSeconds);
 
   const days = Array.from(dayMap.values()).sort((a, b) =>
-    a.dateKey.localeCompare(b.dateKey)
+    a.dateKey.localeCompare(b.dateKey),
   );
 
   return {
-    workedSeconds,
-    regularSeconds,
-    overtimeSeconds,
-    estimatedPay,
+    workedSeconds: payroll.workedSeconds,
+    regularSeconds: payroll.regularSeconds,
+    overtimeSeconds: payroll.overtimeSeconds,
+    doubleTimeSeconds: payroll.doubleTimeSeconds,
+    estimatedPay: payroll.grossPay,
     shiftCount: completed.length,
     workDayCount: days.length,
-    averageSecondsPerWorkDay: days.length ? Math.round(workedSeconds / days.length) : 0,
+    averageSecondsPerWorkDay:
+      days.length > 0 ? Math.round(payroll.workedSeconds / days.length) : 0,
     jobs,
     days,
   };

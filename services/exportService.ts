@@ -14,8 +14,7 @@ function escapeHtml(value: string): string {
 }
 
 function csvCell(value: string | number): string {
-  const text = String(value);
-  return `"${text.replaceAll('"', '""')}"`;
+  return `"${String(value).replaceAll('"', '""')}"`;
 }
 
 function hours(seconds: number): string {
@@ -36,9 +35,9 @@ function safeFilePart(value: string): string {
 export function buildReportCsv(
   report: ReportSummary,
   title: string,
-  period: ReportPeriod
+  period: ReportPeriod,
 ): string {
-  const rows: string[][] = [
+  const rows: Array<Array<string | number>> = [
     ['Timesheet report'],
     ['Period type', period === 'week' ? 'Weekly' : 'Monthly'],
     ['Period', title],
@@ -47,29 +46,50 @@ export function buildReportCsv(
     ['Total hours', hours(report.workedSeconds)],
     ['Regular hours', hours(report.regularSeconds)],
     ['Overtime hours', hours(report.overtimeSeconds)],
+    ['Double-time hours', hours(report.doubleTimeSeconds)],
     ['Estimated gross pay', money(report.estimatedPay)],
-    ['Completed shifts', String(report.shiftCount)],
-    ['Work days', String(report.workDayCount)],
+    ['Completed shifts', report.shiftCount],
+    ['Work days', report.workDayCount],
     ['Average hours per work day', hours(report.averageSecondsPerWorkDay)],
     [],
     ['Jobs'],
-    ['Job', 'Hours', 'Regular hours', 'Overtime hours', 'Estimated pay', 'Shifts'],
+    [
+      'Job',
+      'Hours',
+      'Regular hours',
+      'Overtime hours',
+      'Double-time hours',
+      'Estimated pay',
+      'Shifts',
+    ],
     ...report.jobs.map((job) => [
       job.jobName,
       hours(job.workedSeconds),
       hours(job.regularSeconds),
       hours(job.overtimeSeconds),
+      hours(job.doubleTimeSeconds),
       money(job.estimatedPay),
-      String(job.shiftCount),
+      job.shiftCount,
     ]),
     [],
     ['Daily breakdown'],
-    ['Date', 'Hours', 'Estimated pay', 'Shifts'],
+    [
+      'Date',
+      'Hours',
+      'Regular hours',
+      'Overtime hours',
+      'Double-time hours',
+      'Estimated pay',
+      'Shifts',
+    ],
     ...report.days.map((day) => [
       day.label,
       hours(day.workedSeconds),
+      hours(day.regularSeconds),
+      hours(day.overtimeSeconds),
+      hours(day.doubleTimeSeconds),
       money(day.estimatedPay),
-      String(day.shiftCount),
+      day.shiftCount,
     ]),
   ];
 
@@ -79,7 +99,7 @@ export function buildReportCsv(
 export function buildReportHtml(
   report: ReportSummary,
   title: string,
-  period: ReportPeriod
+  period: ReportPeriod,
 ): string {
   const currency = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -95,12 +115,13 @@ export function buildReportHtml(
               <td>${hours(job.workedSeconds)}</td>
               <td>${hours(job.regularSeconds)}</td>
               <td>${hours(job.overtimeSeconds)}</td>
+              <td>${hours(job.doubleTimeSeconds)}</td>
               <td>${currency.format(job.estimatedPay)}</td>
               <td>${job.shiftCount}</td>
-            </tr>`
+            </tr>`,
         )
         .join('')
-    : '<tr><td colspan="6" class="empty">No completed shifts</td></tr>';
+    : '<tr><td colspan="7">No completed shifts</td></tr>';
 
   const dayRows = report.days.length
     ? report.days
@@ -109,83 +130,74 @@ export function buildReportHtml(
             <tr>
               <td>${escapeHtml(day.label)}</td>
               <td>${hours(day.workedSeconds)}</td>
+              <td>${hours(day.regularSeconds)}</td>
+              <td>${hours(day.overtimeSeconds)}</td>
+              <td>${hours(day.doubleTimeSeconds)}</td>
               <td>${currency.format(day.estimatedPay)}</td>
               <td>${day.shiftCount}</td>
-            </tr>`
+            </tr>`,
         )
         .join('')
-    : '<tr><td colspan="4" class="empty">No daily activity</td></tr>';
+    : '<tr><td colspan="7">No daily activity</td></tr>';
 
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Timesheet Report</title>
-  <style>
-    @page { margin: 30px; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; margin: 0; }
-    .header { border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 22px; }
-    .eyebrow { color: #2563eb; font-size: 11px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; }
-    h1 { margin: 5px 0 4px; font-size: 28px; }
-    .period { color: #6b7280; font-size: 14px; }
-    .hero { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 14px; padding: 18px; margin-bottom: 18px; }
-    .hero-label { color: #1d4ed8; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-    .hero-value { color: #1d4ed8; font-size: 30px; font-weight: 800; margin-top: 5px; }
-    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
-    .metric { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
-    .metric-label { color: #6b7280; font-size: 10px; text-transform: uppercase; }
-    .metric-value { font-size: 16px; font-weight: 800; margin-top: 5px; }
-    h2 { font-size: 17px; margin: 22px 0 9px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { background: #f3f4f6; color: #374151; text-align: left; padding: 9px; }
-    td { border-bottom: 1px solid #e5e7eb; padding: 9px; }
-    .empty { color: #6b7280; text-align: center; padding: 18px; }
-    .footer { color: #9ca3af; font-size: 10px; margin-top: 28px; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="eyebrow">Timesheet Mobile</div>
-    <h1>${period === 'week' ? 'Weekly' : 'Monthly'} Report</h1>
-    <div class="period">${escapeHtml(title)}</div>
-  </div>
+  return `
+  <!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #0f172a; padding: 28px; }
+        h1 { margin-bottom: 4px; }
+        h2 { margin-top: 28px; }
+        .muted { color: #64748b; }
+        .summary { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+        .card { width: 29%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 13px; }
+        .label { font-size: 11px; color: #64748b; text-transform: uppercase; }
+        .value { font-size: 20px; font-weight: 700; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border-bottom: 1px solid #e2e8f0; padding: 9px 6px; text-align: left; }
+        th { color: #475569; background: #f8fafc; }
+      </style>
+    </head>
+    <body>
+      <div class="muted">Timesheet Mobile</div>
+      <h1>${period === 'week' ? 'Weekly' : 'Monthly'} Report</h1>
+      <div class="muted">${escapeHtml(title)}</div>
 
-  <div class="hero">
-    <div class="hero-label">Estimated gross pay</div>
-    <div class="hero-value">${currency.format(report.estimatedPay)}</div>
-  </div>
+      <div class="summary">
+        <div class="card"><div class="label">Estimated pay</div><div class="value">${currency.format(report.estimatedPay)}</div></div>
+        <div class="card"><div class="label">Total hours</div><div class="value">${hours(report.workedSeconds)}</div></div>
+        <div class="card"><div class="label">Regular</div><div class="value">${hours(report.regularSeconds)}</div></div>
+        <div class="card"><div class="label">Overtime</div><div class="value">${hours(report.overtimeSeconds)}</div></div>
+        <div class="card"><div class="label">Double time</div><div class="value">${hours(report.doubleTimeSeconds)}</div></div>
+        <div class="card"><div class="label">Shifts</div><div class="value">${report.shiftCount}</div></div>
+      </div>
 
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Total hours</div><div class="metric-value">${hours(report.workedSeconds)}</div></div>
-    <div class="metric"><div class="metric-label">Regular hours</div><div class="metric-value">${hours(report.regularSeconds)}</div></div>
-    <div class="metric"><div class="metric-label">Overtime hours</div><div class="metric-value">${hours(report.overtimeSeconds)}</div></div>
-    <div class="metric"><div class="metric-label">Completed shifts</div><div class="metric-value">${report.shiftCount}</div></div>
-    <div class="metric"><div class="metric-label">Work days</div><div class="metric-value">${report.workDayCount}</div></div>
-    <div class="metric"><div class="metric-label">Average daily hours</div><div class="metric-value">${hours(report.averageSecondsPerWorkDay)}</div></div>
-  </div>
+      <h2>Job breakdown</h2>
+      <table>
+        <thead>
+          <tr><th>Job</th><th>Hours</th><th>Regular</th><th>OT</th><th>DT</th><th>Pay</th><th>Shifts</th></tr>
+        </thead>
+        <tbody>${jobRows}</tbody>
+      </table>
 
-  <h2>Job breakdown</h2>
-  <table>
-    <thead><tr><th>Job</th><th>Hours</th><th>Regular</th><th>OT</th><th>Pay</th><th>Shifts</th></tr></thead>
-    <tbody>${jobRows}</tbody>
-  </table>
+      <h2>Daily breakdown</h2>
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Hours</th><th>Regular</th><th>OT</th><th>DT</th><th>Pay</th><th>Shifts</th></tr>
+        </thead>
+        <tbody>${dayRows}</tbody>
+      </table>
 
-  <h2>Daily breakdown</h2>
-  <table>
-    <thead><tr><th>Date</th><th>Hours</th><th>Pay</th><th>Shifts</th></tr></thead>
-    <tbody>${dayRows}</tbody>
-  </table>
-
-  <div class="footer">Generated ${new Date().toLocaleString()}</div>
-</body>
-</html>`;
+      <p class="muted">Generated ${new Date().toLocaleString()}</p>
+    </body>
+  </html>`;
 }
 
 export async function exportReportPdf(
   report: ReportSummary,
   title: string,
-  period: ReportPeriod
+  period: ReportPeriod,
 ): Promise<void> {
   const html = buildReportHtml(report, title, period);
 
@@ -195,9 +207,7 @@ export async function exportReportPdf(
   }
 
   const { uri } = await Print.printToFileAsync({ html });
-  const sharingAvailable = await Sharing.isAvailableAsync();
-
-  if (!sharingAvailable) {
+  if (!(await Sharing.isAvailableAsync())) {
     throw new Error('Sharing is not available on this device.');
   }
 
@@ -211,7 +221,7 @@ export async function exportReportPdf(
 export async function exportReportCsv(
   report: ReportSummary,
   title: string,
-  period: ReportPeriod
+  period: ReportPeriod,
 ): Promise<void> {
   const csv = buildReportCsv(report, title, period);
   const filename = `timesheet-${period}-${safeFilePart(title) || 'report'}.csv`;
@@ -234,8 +244,7 @@ export async function exportReportCsv(
     encoding: FileSystem.EncodingType.UTF8,
   });
 
-  const sharingAvailable = await Sharing.isAvailableAsync();
-  if (!sharingAvailable) {
+  if (!(await Sharing.isAvailableAsync())) {
     throw new Error('Sharing is not available on this device.');
   }
 
