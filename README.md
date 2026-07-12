@@ -1,54 +1,41 @@
-# Timesheet Mobile — Milestone 18
+# Timesheet Mobile — Milestone 19
 
-Finalizes the initial iOS application identity and release metadata.
+Adds safer backup inspection and restore controls.
 
 ## Included
 
-- iOS display name: `Timesheet Mobile`
-- iOS bundle identifier: `com.puneet211086.timesheetmobile`
-- Initial iOS build number
-- iPhone-first configuration
-- Face ID permission description
-- Encryption compliance declaration
-- Notification configuration plugin
-- Light and dark splash backgrounds
-- Android package identifier reserved for a future release
-- Development, preview, and production EAS profiles
-
-## Important asset note
-
-This milestone preserves the image paths already used by the project:
-
-- `assets/images/icon.png`
-- `assets/images/splash-icon.png`
-- `assets/images/notification-icon.png`
-- Existing Android adaptive-icon images
-
-Confirm that `notification-icon.png` exists before creating a native build. If it does not exist yet, either add the asset or remove the `icon` property from the `expo-notifications` plugin temporarily.
-
-For the final App Store release, replace the current icon and splash images with finished brand artwork. The iOS App Store icon should be a 1024 × 1024 PNG without transparency.
+- Backup preview before restore
+- Current-device record counts
+- Export date, shift range, and record counts
+- Stronger backup format validation
+- Duplicate ID and duplicate setting detection
+- Orphan job-reference detection
+- Invalid date, pay-rate, and break validation
+- Warnings for active shifts and empty backups
+- Transactional restore retained
+- Face ID and notification identifiers remain excluded
+- No database migration
+- No new packages
 
 ## Install
 
-Copy `app.json` and `eas.json` into the project root, replacing the existing files.
+Copy these folders into the project root and replace matching files:
 
-Then run:
+- `app/`
+- `services/`
+
+Then restart:
 
 ```bash
-npx expo install expo-notifications expo-local-authentication
-npx expo-doctor
-npx expo config --type public
 npx expo start --clear
 ```
 
-## Verify
+## Test
 
-Confirm the public Expo configuration shows:
-
-```text
-name: Timesheet Mobile
-ios.bundleIdentifier: com.puneet211086.timesheetmobile
-ios.buildNumber: 1
-```
-
-Do not change the bundle identifier after creating the App Store Connect app record unless you intentionally want a separate application.
+1. Open Settings > Backup & Restore.
+2. Export a current backup.
+3. Choose the exported file.
+4. Verify the preview shows counts, export date, and shift range.
+5. Confirm no data changes until `Replace data with this backup` is pressed.
+6. Test an invalid JSON file and confirm it is rejected.
+7. Restore the valid backup and verify Dashboard, Calendar, Reports, and Templates.
