@@ -6,13 +6,14 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
       "distribution": "internal",
       "ios": {
         "simulator": false
       }
+    },
+    "preview": {
+      "distribution": "internal",
+      "autoIncrement": true
     },
     "production": {
       "autoIncrement": true

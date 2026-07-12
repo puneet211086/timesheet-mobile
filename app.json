@@ -8,11 +8,12 @@
     "scheme": "timesheetmobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.puneet211086.timesheetmobile",
       "buildNumber": "1",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "NSFaceIDUsageDescription": "Allow Timesheet Mobile to use Face ID to protect your timesheets.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -37,13 +38,25 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#F7F8FC",
+          "dark": {
+            "backgroundColor": "#0F172A"
+          }
         }
       ],
       "expo-sqlite",
       "expo-sharing",
-      "expo-notifications",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#2563EB",
+          "defaultChannel": "shift-reminders"
+        }
+      ],
       [
         "expo-local-authentication",
         {
@@ -53,6 +66,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e2919735-a2a0-4d60-a189-30c6f59fce92"
+      }
     }
   }
 }
