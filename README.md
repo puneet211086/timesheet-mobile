@@ -1,19 +1,21 @@
-# Timesheet Mobile — Milestone 20
+# Timesheet Mobile — Milestone 21
 
-Adds a polished first-launch onboarding experience.
+Adds Dashboard 2.0 and user-experience polish to the Home tab.
 
 ## Included
 
-- Four-step first-launch onboarding
-- Local-first privacy explanation
-- First job name and hourly-rate setup
-- Dashboard, reports, and backup introduction
-- Completion stored in `app_settings`
-- Onboarding appears only once
-- Existing Face ID and Preferences providers preserved
-- Success haptic on mobile
-- No new npm packages
-- Replaced current confirmToggle with web-safe version
+- Refined active-shift hero card
+- Clear shift status and live timer
+- Improved job picker
+- Today's hours and earnings cards
+- Weekly progress and overtime state
+- Quick actions for Add Shift, Reports, Calendar, and Jobs
+- Tappable completed recent entries
+- Improved loading and empty states
+- Accessibility labels and larger touch targets
+- Automatic refresh whenever Home regains focus
+- No database migration
+- No new packages
 
 ## Install
 
@@ -21,7 +23,7 @@ Copy these folders into the project root and replace matching files:
 
 - `app/`
 - `components/`
-- `database/`
+- `types/`
 
 Then restart:
 
@@ -29,31 +31,17 @@ Then restart:
 npx expo start --clear
 ```
 
-## Testing an existing installation
+## Test
 
-Existing databases will receive:
+1. Open Home with no entries and verify the improved empty state.
+2. Select a job and clock in.
+3. Confirm the status, timer, and clock-out button update.
+4. Verify Today hours and earnings update while the shift runs.
+5. Clock out and tap the completed recent entry.
+6. Test Add Shift, Reports, Calendar, Jobs, Settings, and View All shortcuts.
+7. Add a shift from another screen and return Home; totals should refresh.
+8. Test on a narrow iPhone screen and with larger accessibility text.
 
-```text
-onboarding_completed = false
-```
+## Notes
 
-so the onboarding appears once after installing this milestone.
-
-To test it again later, run this temporarily from a debug action or SQLite viewer:
-
-```sql
-UPDATE app_settings
-SET value = 'false'
-WHERE key = 'onboarding_completed';
-```
-
-Then restart the app.
-
-## Test flow
-
-1. Launch the app.
-2. Move through the welcome and privacy screens.
-3. Rename the starter job and change its hourly rate.
-4. Finish onboarding.
-5. Confirm the Home screen uses the updated job.
-6. Restart the app and confirm onboarding does not appear again.
+This milestone intentionally reuses the existing weekly calculation and 40-hour target. Advanced daily/weekly/double-time rules remain a future payroll milestone.
