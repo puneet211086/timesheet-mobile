@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "timesheet-mobile",
+    "name": "Timesheet Mobile",
     "slug": "timesheet-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,9 +8,16 @@
     "scheme": "timesheetmobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.puneet211086.timesheetmobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
+      "package": "com.puneet211086.timesheetmobile",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -36,16 +43,10 @@
       ],
       "expo-sqlite",
       "expo-sharing",
-      "@react-native-community/datetimepicker"
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "e2919735-a2a0-4d60-a189-30c6f59fce92"
-      }
     }
   }
 }

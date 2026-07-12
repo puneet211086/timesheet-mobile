@@ -1,33 +1,27 @@
-# Timesheet Mobile — Milestone 11 (iOS Polish)
+# Timesheet Mobile — Milestone 13
 
-Adds native date/time controls for manual entry and entry editing.
+Adds App Store readiness pages inside the app.
 
 ## Included
-
-- Native iOS wheel date and time pickers
-- Native Android date/time dialogs
-- Web text-field fallback
-- Device-localized time display (12/24-hour)
-- Success haptic after saving on mobile
-- Existing break, overlap, validation, and delete behavior retained
+- Privacy Policy screen
+- Support screen
+- About screen with app version/build display
+- Settings links for all three pages
+- Existing notification settings preserved
 - No database migration
+- No additional packages
 
 ## Install
+Copy the included `app` folder into your project root and replace matching files.
 
-Copy the included `app` and `components` folders into the project root and replace matching files.
-
-Install the Expo-compatible dependencies:
+Restart Expo:
 
 ```bash
-npx expo install @react-native-community/datetimepicker expo-haptics
 npx expo start --clear
 ```
 
-## Test
-
-1. Open Timesheet > Add.
-2. Tap Date, Clock in, and Clock out on an iPhone.
-3. Confirm the wheel picker opens and Done closes it.
-4. Save and confirm the success haptic.
-5. Open a completed shift and verify the same controls on Edit Shift.
-6. Confirm web still shows typed date/time fields.
+## Before App Store submission
+- Publish the Privacy Policy on a public URL.
+- Create a dedicated Support URL.
+- Replace or supplement the GitHub support link with a support email address.
+- Review the privacy text whenever analytics, cloud sync, advertising, accounts, or crash reporting are added.
