@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import * as LocalAuthentication from "expo-local-authentication";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useState } from "react";
@@ -35,15 +36,17 @@ export default function SettingsScreen() {
   const [hours, setHours] = useState(8);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
+  const [appLockEnabled, setAppLockEnabled] = useState(false);
   const version = Constants.expoConfig?.version ?? "1.0.0";
 
   const loadSettings = useCallback(async () => {
     const rows = await db.getAllAsync<{ key: string; value: string }>(
-      `SELECT key, value FROM app_settings WHERE key IN ('shift_reminder_enabled', 'shift_reminder_hours')`,
+      `SELECT key, value FROM app_settings WHERE key IN ('shift_reminder_enabled', 'shift_reminder_hours', 'app_lock_enabled')`,
     );
     const values = Object.fromEntries(rows.map((row) => [row.key, row.value]));
     setEnabled(values.shift_reminder_enabled === "true");
     setHours(Number(values.shift_reminder_hours ?? "8"));
+    setAppLockEnabled(values.app_lock_enabled === "true");
     setLoading(false);
   }, [db]);
 
@@ -76,6 +79,37 @@ export default function SettingsScreen() {
   const chooseHours = async (value: number) => {
     setHours(value);
     await saveSetting("shift_reminder_hours", String(value));
+  };
+
+  const toggleAppLock = async (nextValue: boolean) => {
+    if (Platform.OS === "web") {
+      Alert.alert("Mobile feature", "Face ID and device authentication are available on iOS and Android.");
+      return;
+    }
+
+    if (nextValue) {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (!hasHardware || !isEnrolled) {
+        Alert.alert(
+          "Device authentication unavailable",
+          "Set up Face ID, Touch ID, or device authentication in your phone settings first.",
+        );
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Enable app lock",
+        fallbackLabel: "Use Passcode",
+        disableDeviceFallback: false,
+      });
+
+      if (!result.success) return;
+    }
+
+    setAppLockEnabled(nextValue);
+    await saveSetting("app_lock_enabled", String(nextValue));
   };
 
   const testReminder = async () => {
@@ -111,7 +145,24 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionLabel}>REMINDERS</Text>
+        <Text style={styles.sectionLabel}>PRIVACY & SECURITY</Text>
+        <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <View style={styles.iconBox}><Ionicons name="lock-closed-outline" size={21} color="#2563EB" /></View>
+            <View style={styles.settingCopy}>
+              <Text style={styles.settingTitle}>Require Face ID or device authentication</Text>
+              <Text style={styles.settingDescription}>Lock the app when it returns from the background.</Text>
+            </View>
+            <Switch value={appLockEnabled} onValueChange={(value) => void toggleAppLock(value)} disabled={Platform.OS === "web"} />
+          </View>
+        </View>
+
+        <View style={styles.infoCard}>
+          <Ionicons name="finger-print-outline" size={20} color="#475569" />
+          <Text style={styles.infoText}>Authentication is handled by iOS or Android. The app never receives or stores your biometric data.</Text>
+        </View>
+
+        <Text style={[styles.sectionLabel, styles.sectionSpacing]}>REMINDERS</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <View style={styles.iconBox}><Ionicons name="notifications-outline" size={21} color="#2563EB" /></View>

@@ -97,6 +97,11 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     'shift_reminder_hours',
     '8'
   );
+  await db.runAsync(
+    `INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)`,
+    'app_lock_enabled',
+    'false'
+  );
 
   const result = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) AS count FROM jobs'

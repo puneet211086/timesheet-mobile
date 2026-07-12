@@ -1,29 +1,52 @@
-# Timesheet Mobile — Milestone 14
+# Timesheet Mobile — Milestone 15
 
-Adds saved shift templates and one-tap quick entry.
+Adds an optional local app lock using Face ID, Touch ID, or device authentication.
 
 ## Included
-- Create reusable shift templates
-- Save a default job, clock-in/out times, unpaid break, and notes
-- Apply a template instantly from Add Shift
-- Manage and delete templates from Settings
-- Safe SQLite migration
-- Existing entries and calculations remain unchanged
-- No new npm packages
+- App-lock switch in Settings
+- Device capability and enrollment checks
+- Authentication before enabling the lock
+- Lock when the app returns from the background
+- Unlock screen with retry support
+- Device passcode fallback
+- Web-safe behavior
+- Safe `app_settings` migration
 
 ## Install
-Copy the included `app` and `database` folders into the project root and replace matching files.
+Copy these folders/files into your project and replace matching files:
 
-Restart Expo:
+- `app/`
+- `components/`
+- `database/`
+
+Install the Expo-compatible dependency:
 
 ```bash
+npx expo install expo-local-authentication
 npx expo start --clear
 ```
 
+## Required app.json change
+Do **not** replace your full `app.json`. Merge the following entry into the existing `expo.plugins` array:
+
+```json
+[
+  "expo-local-authentication",
+  {
+    "faceIDPermission": "Allow Timesheet Mobile to use Face ID to protect your timesheets."
+  }
+]
+```
+
+The included `app-json-plugin-snippet.json` shows the required structure.
+
+## Testing limitation
+Face ID is not supported in Expo Go on iOS. Test Face ID with an iOS development build or TestFlight build. Touch ID/device authentication availability depends on the device and environment.
+
 ## Test
-1. Open Settings > Shift Templates.
-2. Save a template such as “Weekday 9–5”.
-3. Open Timesheet > Add.
-4. Tap the template under Quick Templates.
-5. Confirm job, times, break, and notes are prefilled.
-6. Save the entry and verify it appears across the app.
+1. Open Settings.
+2. Enable **Require Face ID or device authentication**.
+3. Authenticate when prompted.
+4. Send the app to the background.
+5. Reopen it and confirm the lock screen appears.
+6. Disable the setting and confirm the app no longer locks.

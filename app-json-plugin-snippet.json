@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Timesheet Mobile to use Face ID to protect your timesheets."
+        }
+      ]
+    ]
+  }
+}

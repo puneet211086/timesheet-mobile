@@ -43,7 +43,13 @@
       ],
       "expo-sqlite",
       "expo-sharing",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Timesheet Mobile to use Face ID to protect your timesheets."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
